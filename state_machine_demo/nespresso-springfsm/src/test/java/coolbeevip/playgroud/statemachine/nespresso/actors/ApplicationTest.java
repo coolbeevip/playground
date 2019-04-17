@@ -120,20 +120,20 @@ public class ApplicationTest {
   }
 
   /**
-   * 制作时关机，重新开机后自动进入就绪状态
+   * 制作时关机，重新开机后自动进入就绪状态(胶囊还未用完)
    * TODO 如何传递变量是否有胶囊
    * */
-  //@Test
-//  @SneakyThrows
-//  public void powerOnAfterPowerOffWhenWorking(){
-//    Assert.assertEquals(stateMachine.getState().getId(), CitizState.OFF);
-//    stateMachine.sendEvent(CitizEvent.PressPowerON);
-//    stateMachine.sendEvent(CitizEvent.PushCapsule);
-//    stateMachine.sendEvent(CitizEvent.PressTallCupButton);
-//    stateMachine.sendEvent(CitizEvent.PressPowerOFF);
-//    stateMachine.sendEvent(CitizEvent.PressPowerON);
-//    Assert.assertEquals(stateMachine.getState().getId(), CitizState.READY);
-//  }
+  @Test
+  @SneakyThrows
+  public void powerOnAfterPowerOffWhenWorking(){
+    Assert.assertEquals(stateMachine.getState().getId(), CitizState.OFF);
+    stateMachine.sendEvent(CitizEvent.PressPowerON);
+    stateMachine.sendEvent(CitizEvent.PushCapsule);
+    stateMachine.sendEvent(CitizEvent.PressTallCupButton);
+    stateMachine.sendEvent(CitizEvent.PressPowerOFF);
+    stateMachine.sendEvent(CitizEvent.PressPowerON);
+    Assert.assertEquals(stateMachine.getState().getId(), CitizState.READY);
+  }
 
   /**
    * 非就绪状态 + 按制作咖啡按钮

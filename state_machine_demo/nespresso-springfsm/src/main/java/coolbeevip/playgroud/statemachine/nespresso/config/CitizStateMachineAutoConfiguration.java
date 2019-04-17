@@ -1,6 +1,7 @@
 package coolbeevip.playgroud.statemachine.nespresso.config;
 
 import coolbeevip.playgroud.statemachine.nespresso.message.CitizEvent;
+import coolbeevip.playgroud.statemachine.nespresso.model.CitizData;
 import coolbeevip.playgroud.statemachine.nespresso.model.CitizState;
 import java.util.EnumSet;
 import javax.annotation.PostConstruct;
@@ -15,6 +16,7 @@ import org.springframework.statemachine.config.EnableStateMachine;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
+import org.springframework.statemachine.guard.Guard;
 import org.springframework.statemachine.monitor.StateMachineMonitor;
 
 /**
@@ -40,7 +42,7 @@ public class CitizStateMachineAutoConfiguration {
   }
 
   @Configuration
-  @EnableStateMachine
+  @EnableStateMachine(contextEvents=false)
   public static class CitizStateMachine extends
       EnumStateMachineConfigurerAdapter<CitizState, CitizEvent> {
 
@@ -60,6 +62,12 @@ public class CitizStateMachineAutoConfiguration {
           //关机状态 + 按下开机按钮
           .withExternal()
           .source(CitizState.OFF).target(CitizState.ON).event(CitizEvent.PressPowerON)
+          .action(checkCapsuleAction())
+          .and()
+
+          //关机状态 + 压入咖啡胶囊
+          .withExternal()
+          .source(CitizState.OFF).target(CitizState.READY).event(CitizEvent.PushCapsule)
           .and()
 
           //开机状态 + 按下关机按钮
@@ -75,12 +83,12 @@ public class CitizStateMachineAutoConfiguration {
           //开机状态 + 压入咖啡胶囊
           .withExternal()
           .source(CitizState.ON).target(CitizState.READY).event(CitizEvent.PushCapsule)
+          .action(pushCapsuleAction())
           .and()
 
           //就绪状态 + 按下制作小杯按钮（工作5秒钟）
           .withExternal()
           .source(CitizState.READY).target(CitizState.WORKING).event(CitizEvent.PressTallCupButton)
-          .action(action())
           .and()
 
           //就绪状态 + 按下制作大杯按钮（工作10秒钟）
@@ -97,6 +105,7 @@ public class CitizStateMachineAutoConfiguration {
           //工作状态 + 5 秒钟完成一杯
           .withExternal()
           .source(CitizState.WORKING).target(CitizState.ON).timerOnce(TALL_CUP_WORKING_TIME) // TODO 如何动态设置超时，小杯5秒，大杯10秒自动结束WORKING状态
+          .action(popCapsuleAction())
           .and()
 
           //工作状态 + 按下关机按钮
@@ -104,14 +113,50 @@ public class CitizStateMachineAutoConfiguration {
           .source(CitizState.WORKING).target(CitizState.OFF).event(CitizEvent.PressPowerOFF);
     }
 
+    /**
+     * ON -> READY
+     * 放入胶囊动作，设置数据对象胶囊位=true
+     * */
     @Bean
-    public Action<CitizState, CitizEvent> action() {
+    public Action<CitizState, CitizEvent> pushCapsuleAction() {
       return new Action<CitizState, CitizEvent>() {
-
         @Override
         public void execute(StateContext<CitizState, CitizEvent> context) {
-          // do something
-          log.info("action");
+          CitizData citizData = (CitizData)context.getExtendedState().getVariables().get("data");
+          citizData.setCapsule(true);
+        }
+      };
+    }
+
+    /**
+     * WORKING->ON
+     * 弹出胶囊动作，设置数据对象胶囊位=false
+     * */
+    @Bean
+    public Action<CitizState, CitizEvent> popCapsuleAction() {
+      return new Action<CitizState, CitizEvent>() {
+        @Override
+        public void execute(StateContext<CitizState, CitizEvent> context) {
+          CitizData citizData = (CitizData)context.getExtendedState().getVariables().get("data");
+          citizData.setCapsule(false);
+        }
+      };
+    }
+
+    /**
+     * OFF->ON
+     * 开机后检查胶囊状态，有胶囊重新发送压入胶囊事件
+     * TODO 是否有直接进行状态切换的方法
+     * */
+    @Bean
+    public Action<CitizState, CitizEvent> checkCapsuleAction() {
+      return new Action<CitizState, CitizEvent>() {
+        @Override
+        public void execute(StateContext<CitizState, CitizEvent> context) {
+          CitizData citizData = (CitizData)context.getExtendedState().getVariables().get("data");
+          if(citizData.isCapsule()){
+            context.getStateMachine().sendEvent(CitizEvent.PushCapsule);
+          }
         }
       };
     }
