@@ -61,7 +61,7 @@ public class CitizStateMachineTest extends JUnitSuite {
   }
 
   /**
-   * 10 秒钟后自动关机
+   * 开机状态 10 秒钟后自动关机
    */
   @Test
   @SneakyThrows
@@ -79,7 +79,7 @@ public class CitizStateMachineTest extends JUnitSuite {
   }
 
   /**
-   * 10 秒钟后自动关机
+   * 就绪状态 10 秒钟后自动关机
    */
   @Test
   @SneakyThrows
@@ -126,9 +126,12 @@ public class CitizStateMachineTest extends JUnitSuite {
     };
   }
 
+  /**
+   * 制作时关机，重新开机后自动进入就绪状态
+   * */
   @Test
   @SneakyThrows
-  public void powerOffDuringCoffeeProduction () {
+  public void powerOnAfterPowerOffWhenWorking () {
     new TestKit(system) {
       {
         final ActorRef citiz = system.actorOf(Props.create(CitizStateMachine.class));
@@ -149,6 +152,10 @@ public class CitizStateMachineTest extends JUnitSuite {
       }
     };
   }
+
+  /**
+   * 非就绪状态 + 按制作咖啡按钮
+   * */
 
   @Test
   @SneakyThrows
