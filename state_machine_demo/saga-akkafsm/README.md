@@ -14,12 +14,10 @@
 
   ![image-20190420005126848](assets/saga_state_table.png)
 
-  
-
-  ![image-20190420005436096](assets/tx_state_diagram.png)
+  ![saga_state_diagram](assets/saga_state_diagram.png)
 
 * Tx State Machine
   ![image-20190420005126848](assets/tx_state_table.png)
 
-  ![image-20190420005926716](assets/saga_state_diagram.png)
+  ![tx_state_diagram](assets/tx_state_diagram.png)
 
