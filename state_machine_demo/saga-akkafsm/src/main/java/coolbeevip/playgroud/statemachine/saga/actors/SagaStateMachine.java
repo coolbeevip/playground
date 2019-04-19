@@ -23,7 +23,7 @@ public class SagaStateMachine extends AbstractFSM<SagaState, StateMachineData> {
     when(SagaState.Idle,
         matchEvent(SagaStartedEvent.class, StateMachineData.class,
             (event, data) -> {
-              log.info("SagaStartedEvent");
+              log.info("SS globalTxId={}",event.getGlobalTxId());
               return goTo(SagaState.Active)
                   .using(SagaData.builder().globalTxId(event.getGlobalTxId()).build());
             }
@@ -66,7 +66,7 @@ public class SagaStateMachine extends AbstractFSM<SagaState, StateMachineData> {
     when(SagaState.PartiallyCommitted,
         matchEvent(SagaEndedEvent.class, SagaData.class,
             (event, data) -> {
-              log.info("SagaEndedEvent");
+              log.info("SE globalTxId={}",event.getGlobalTxId());
               data.setEndTime(System.currentTimeMillis());
               return goTo(SagaState.Committed).using(data);
             }
@@ -92,9 +92,16 @@ public class SagaStateMachine extends AbstractFSM<SagaState, StateMachineData> {
                   .using(data);
             }));
 
+    whenUnhandled(
+        matchAnyEvent((event, data) -> {
+          log.warn("");
+          return stay();
+        })
+    );
+
     onTransition(
         matchState(SagaState.PartiallyCommitted, SagaState.Committed, (from, to) -> {
-          log.info("{} {} -> {}",getSelf().path().name(),from.name(),to.name());
+          //log.info("{} {} -> {}", getSelf().path().name(), from.name(), to.name());
         })
     );
 

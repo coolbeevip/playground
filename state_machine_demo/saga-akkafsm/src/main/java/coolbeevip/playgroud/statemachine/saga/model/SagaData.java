@@ -1,6 +1,7 @@
 package coolbeevip.playgroud.statemachine.saga.model;
 
 import akka.actor.ActorRef;
+import coolbeevip.playgroud.statemachine.saga.event.TxStartedEvent;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.Builder;
@@ -20,7 +21,6 @@ public class SagaData implements StateMachineData {
   private Set<ActorRef> txSet = new HashSet<>();
   @Default
   private Set<TxData> txData = new HashSet<>();
-
 
   public void addTxStartedEvent(ActorRef tx){
     if(!txSet.contains(tx)){

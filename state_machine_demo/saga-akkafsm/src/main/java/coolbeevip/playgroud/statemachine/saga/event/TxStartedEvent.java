@@ -6,7 +6,7 @@ import lombok.Getter;
 @Builder
 @Getter
 public class TxStartedEvent {
-  private String localTxId;
-  private String parentTxId;
   private String globalTxId;
+  private String parentTxId;
+  private String localTxId;
 }

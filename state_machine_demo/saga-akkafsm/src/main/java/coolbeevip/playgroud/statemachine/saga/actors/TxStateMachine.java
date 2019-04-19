@@ -22,28 +22,32 @@ public class TxStateMachine extends AbstractFSM<TxState, StateMachineData> {
     when(TxState.Idle,
         matchEvent(TxStartedEvent.class, StateMachineData.class,
             (event, data) -> {
-              log.info("TxStartedEvent {}",event.getLocalTxId());
-              return goTo(TxState.Active).using(TxData.builder().globalTxId(event.getParentTxId()).parentTxId(event.getParentTxId()).localTxId(event.getLocalTxId()).build());
+              log.info("  TS globalTxId={} parentTxId={} localTxId={}", event.getGlobalTxId(),
+                  event.getParentTxId(), event.getLocalTxId());
+              return goTo(TxState.Active).using(TxData.builder().globalTxId(event.getParentTxId())
+                  .parentTxId(event.getParentTxId()).localTxId(event.getLocalTxId()).build());
             }
         )
     );
 
-    // Idle + TxEndedEvent
+    // Active + TxEndedEvent
     when(TxState.Active,
         matchEvent(TxEndedEvent.class, TxData.class,
             (event, data) -> {
-              log.info("TxEndedEvent {}",event.getLocalTxId());
+              log.info("  TE globalTxId={} parentTxId={} localTxId={}", event.getGlobalTxId(),
+                  event.getParentTxId(), event.getLocalTxId());
               data.setEndTime(System.currentTimeMillis());
               return goTo(TxState.Committed).using(data);
             }
         )
     );
 
-    // Idle + TxAbortedEvent
+    // Active + TxAbortedEvent
     when(TxState.Active,
         matchEvent(TxAbortedEvent.class, TxData.class,
             (event, data) -> {
-              log.info("TxAbortedEvent {}",event.getLocalTxId());
+              log.info("  TA globalTxId={} parentTxId={} localTxId={}", event.getGlobalTxId(),
+                  event.getParentTxId(), event.getLocalTxId());
               return goTo(TxState.Failed).using(data);
             }
         )
@@ -57,11 +61,18 @@ public class TxStateMachine extends AbstractFSM<TxState, StateMachineData> {
                   .using(data);
             }));
 
+    whenUnhandled(
+      matchAnyEvent((event, data) -> {
+        log.warn("");
+        return stay();
+      })
+    );
+
     onTransition(
         matchState(TxState.Active, TxState.Committed, (from, to) -> {
-          log.info("{} {} -> {}",getSelf().path().name(),from.name(),to.name());
+          //log.info("{} {} -> {}",getSelf().path().name(),from.name(),to.name());
         }).state(TxState.Active, TxState.Active, (from, to) -> {
-          log.info("{} {} -> {}",getSelf().path().name(),from.name(),to.name());
+          //log.info("{} {} -> {}",getSelf().path().name(),from.name(),to.name());
         })
     );
 

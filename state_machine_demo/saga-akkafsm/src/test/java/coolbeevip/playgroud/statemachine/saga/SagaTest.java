@@ -69,10 +69,10 @@ public class SagaTest {
       final ActorRef saga =  system.actorOf(Props.create(SagaStateMachine.class),"saga");
       final ActorRef tx =  system.actorOf(Props.create(TxStateMachine.class),"tx1");
       saga.tell(SagaStartedEvent.builder().globalTxId(globalTxId).build(),tx);
-      saga.tell(TxStartedEvent.builder().localTxId(localTxId).parentTxId(globalTxId).globalTxId(globalTxId).build(),tx);
-      saga.tell(TxEndedEvent.builder().localTxId(localTxId).build(),tx);
-      saga.tell(SagaEndedEvent.builder().build(),tx);
-      Thread.sleep(1000*60);
+      saga.tell(TxStartedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId).build(),tx);
+      //saga.tell(TxEndedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId).build(),tx);
+      saga.tell(SagaEndedEvent.builder().globalTxId(globalTxId).build(),tx);
+      expectNoMessage();
       system.stop(saga);
     }};
   }

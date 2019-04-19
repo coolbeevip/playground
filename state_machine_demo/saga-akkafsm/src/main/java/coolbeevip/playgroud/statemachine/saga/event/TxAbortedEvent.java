@@ -6,5 +6,7 @@ import lombok.Getter;
 @Builder
 @Getter
 public class TxAbortedEvent {
+  private String globalTxId;
+  private String parentTxId;
   private String localTxId;
 }
