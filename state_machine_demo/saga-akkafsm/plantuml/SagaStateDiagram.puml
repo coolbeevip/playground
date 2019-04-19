@@ -1,0 +1,37 @@
+@startuml
+hide empty description
+
+[*] --> IDEL : SagaStartedEvent
+
+IDEL --> ACTIVE : TXStartedEvent
+
+IDEL --> COMMITTED : SagaEndedEvent
+
+ACTIVE --> PARTIALLY_COMMITTED : TXEndedEvent
+
+ACTIVE --> FAILED : TXAbortedEvent
+
+PARTIALLY_COMMITTED --> COMMITTED : SagaEndedEvent
+
+PARTIALLY_COMMITTED --> PARTIALLY_ACTIVE : TXStartedEvent
+
+PARTIALLY_ACTIVE --> PARTIALLY_COMMITTED : TXEndedEvent
+
+PARTIALLY_ACTIVE --> FAILED : TXAbortedEvent
+
+FAILED --> COMPENSATED : Successful full compensation
+
+COMPENSATED --> [*]
+
+COMMITTED --> [*]
+
+ACTIVE : new tx state
+
+PARTIALLY_COMMITTED : tell tx state
+
+PARTIALLY_ACTIVE : new tx state
+
+FAILED : while committed txs {\n    do compensate\n}
+
+
+@enduml

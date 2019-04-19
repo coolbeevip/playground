@@ -1,0 +1,13 @@
+@startuml
+hide empty description
+
+[*] --> IDEL
+IDEL --> ACTIVE : TXStartedEvent
+ACTIVE --> COMMITTED : TXEndedEvent
+ACTIVE --> FAILED : TXAbortedEvent
+COMMITTED --> COMPENSATED : TxCompensateEvent
+COMMITTED --> [*]
+FAILED --> [*]
+COMPENSATED --> [*]
+
+@enduml
