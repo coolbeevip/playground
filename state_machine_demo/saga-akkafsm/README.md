@@ -1,0 +1,125 @@
+# Saga State Machine
+
+## State Tables
+
+<table style="text-align:center;"> 
+ <caption>
+  <b>Saga State Transition Table</b>
+ </caption> 
+ <tbody>
+  <tr> 
+   <th style="background:linear-gradient(to top right,#eaecf0 49.5%,#aaa 49.5%,#aaa 50.5%,#eaecf0 50.5%);line-height:1;border: 1px solid #a2a9b1;">
+      <div style="margin-left:2em;text-align:right;">
+       <small>State<br />(Next)</small>
+      </div>
+      <div style="margin-right:2em;text-align:left;">
+       <small>State<br />(Current)</small>
+      </div> 
+    </th> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Idle</th> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Active</th> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Partially Committed</th> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Failed</th>
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Committed</th>    
+  </tr> 
+  <tr> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Idle</th> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;">E<sub>ss</sub></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+  </tr> 
+  <tr> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Active</th> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;">E<sub>ts</sub></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;">E<sub>te</sub></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>     
+  </tr> 
+  <tr> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Partially Committed</th> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;">E<sub>ts</sub></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;">E<sub>se</sub></td>     
+  </tr> 
+  <tr> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Failed</th> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>     
+  </tr>
+  <tr> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Committed</th> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>     
+  </tr>    
+ </tbody>
+</table>
+
+<table style="text-align:center;"> 
+ <caption>
+  <b>Tx State Transition Table</b>
+ </caption> 
+ <tbody>
+  <tr> 
+   <th style="background:linear-gradient(to top right,#eaecf0 49.5%,#aaa 49.5%,#aaa 50.5%,#eaecf0 50.5%);line-height:1;border: 1px solid #a2a9b1;">
+      <div style="margin-left:2em;text-align:right;">
+       <small>State<br />(Next)</small>
+      </div>
+      <div style="margin-right:2em;text-align:left;">
+       <small>State<br />(Current)</small>
+      </div> 
+    </th> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Idle</th> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Active</th> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Failed</th>
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Committed</th>    
+  </tr> 
+  <tr> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Idle</th> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;">E<sub>ts</sub></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>
+  </tr> 
+  <tr> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Active</th> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;">E<sub>ta</sub></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;">E<sub>te</sub></td>  
+  </tr> 
+  <tr> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Failed</th> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>
+  </tr>
+  <tr> 
+   <th style="background-color: #eaecf0;border: 1px solid #a2a9b1;">Committed</th> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>
+  </tr>    
+ </tbody>
+</table>
+
+* E<sub>ss</sub> SagaStartedEvent
+* E<sub>se</sub> SagaEndedEvent
+* E<sub>ts</sub> TxStartedEvent
+* E<sub>te</sub> TxEndedEvent
+* E<sub>ta</sub> TxAbortedEvent
+
+## State Diagram
+
