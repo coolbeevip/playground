@@ -21,3 +21,10 @@
 
   ![tx_state_diagram](assets/tx_state_diagram.png)
 
+* Reference
+
+  * [servicecomb](https://cwiki.apache.org/confluence/display/SERVICECOMB/Using+StateMachine+for+tracing+the+transaction+states)
+  * [state transition table](https://en.wikipedia.org/wiki/State_transition_table)
+  * [uml](<http://plantuml.com/en/)
+
+
