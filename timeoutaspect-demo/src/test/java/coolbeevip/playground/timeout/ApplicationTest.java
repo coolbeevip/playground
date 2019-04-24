@@ -34,67 +34,72 @@ public class ApplicationTest {
   public void noTimeoutTest() {
     List<User> users = new ArrayList<>();
     users.add(User.builder().id(1).name("zhanglei").build());
-    myService.save(users,2000);
+    myService.save(users, 2000);
     Optional<User> user = myService.find(1);
     Assert.assertNotNull(user.get());
     Assert.assertEquals(user.get().getId(), Integer.valueOf(1));
   }
 
   /**
-   *  simulation execution 2s
-   * */
+   * simulation execution 2s
+   */
   @Test
   public void noTimeoutBatchTest() throws TimeoutAspectException {
-    try{
+    try {
       List<User> users = new ArrayList<>();
       users.add(User.builder().id(1).name("zhanglei").build());
       users.add(User.builder().id(2).name("coolbeevip").build());
-      myService.save(users,2000);
-    }finally {
-      Assert.assertEquals(myService.count(),2l);
+      myService.save(users, 2000);
+    } finally {
+      Assert.assertEquals(myService.count(), 2l);
     }
   }
 
   @Test
   public void noTimeoutUniqueIndexExceptionTest() throws TimeoutAspectException {
-    try{
+    try {
       List<User> users = new ArrayList<>();
       users.add(User.builder().id(1).name("zhanglei").build());
       users.add(User.builder().id(2).name("zhanglei").build());
-      myService.save(users,2000);
-    }catch (Exception e){
+      myService.save(users, 2000);
+    } catch (Exception e) {
       log.error(e.getMessage());
-    }finally {
-      Assert.assertEquals(myService.count(),0l);
+    } finally {
+      Assert.assertEquals(myService.count(), 0l);
     }
   }
 
   @Test
   public void timeoutText() throws TimeoutAspectException {
-    try{
+    try {
       List<User> users = new ArrayList<>();
       users.add(User.builder().id(1).name("zhanglei").build());
-      myService.save(users,3000);
-    }catch (Exception e){
+      myService.save(users, 3000);
+    } catch (Exception e) {
       log.error(e.getMessage());
-    }finally {
-      log.info("count={}",myService.count());
-      Assert.assertEquals(myService.count(),0l);
+    } finally {
+      Assert.assertEquals(myService.count(), 0l);
     }
   }
 
   @Test
   public void timeoutBatchText() throws TimeoutAspectException {
-    try{
+    try {
       List<User> users = new ArrayList<>();
       users.add(User.builder().id(1).name("zhanglei").build());
       users.add(User.builder().id(2).name("coolbeevip").build());
-      myService.save(users,3000);
-    }catch (Exception e){
+      myService.save(users, 3000);
+    } catch (Exception e) {
       log.error(e.getMessage());
-    }finally {
-      log.info("count={}",myService.count());
-      Assert.assertEquals(myService.count(),0l);
+    } finally {
+      Assert.assertEquals(myService.count(), 0l);
     }
+  }
+
+  @Test(expected = TimeoutAspectException.class)
+  public void timeoutCatchTimeoutAspectExceptionTest() throws TimeoutAspectException {
+    List<User> users = new ArrayList<>();
+    users.add(User.builder().id(1).name("zhanglei").build());
+    myService.save(users, 3000);
   }
 }
