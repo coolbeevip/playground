@@ -1,19 +1,17 @@
 package coolbeevip.playground.timeout.service;
 
 import coolbeevip.playground.timeout.annotations.Timeout;
-import coolbeevip.playground.timeout.exception.TimeoutAspectException;
 import coolbeevip.playground.timeout.jpa.User;
 import coolbeevip.playground.timeout.jpa.UserRepository;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-//import javax.transaction.Transactional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+//import javax.transaction.Transactional;
 
 @Slf4j
 @Service
