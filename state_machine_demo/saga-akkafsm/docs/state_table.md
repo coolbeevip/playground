@@ -58,7 +58,7 @@
    <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td> 
    <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;">E<sub>te</sub></td> 
    <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>
-   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;">E<sub>ta</sub></td>    
+   <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;">E<sub>sa</sub></td>    
    <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>
    <td style="background-color: #f8f9fa;border: 1px solid #a2a9b1;"></td>    
   </tr>

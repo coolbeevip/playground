@@ -1,0 +1,31 @@
+@startuml
+hide empty description
+
+[*] --> IDEL : SagaStartedEvent-1
+
+IDEL --> PARTIALLY_ACTIVE : TxStartedEvent-1
+
+PARTIALLY_ACTIVE --> PARTIALLY_COMMITTED : TxEndedEvent-1
+
+PARTIALLY_ACTIVE --> PARTIALLY_COMMITTED : TxEndedEvent-2
+
+PARTIALLY_COMMITTED --> PARTIALLY_ACTIVE : TxStartedEvent-2
+
+PARTIALLY_COMMITTED --> COMMITTED : SagaEndedEvent-1
+
+COMMITTED --> [*]
+
+PARTIALLY_COMMITTED : update tx state
+
+PARTIALLY_ACTIVE : new tx state
+
+note as N1
+  SagaStartedEvent-1
+  TxStartedEvent-1
+  TxEndedEvent-1
+  TxStartedEvent-2
+  TxEndedEvent-2
+  SagaEndedEvent-1
+end note
+
+@enduml

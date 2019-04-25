@@ -3,31 +3,39 @@ hide empty description
 
 [*] --> IDEL : SagaStartedEvent
 
-IDEL --> ACTIVE : TXStartedEvent
+IDEL --> PARTIALLY_ACTIVE : TxStartedEvent
 
-IDEL --> COMMITTED : SagaEndedEvent
+IDEL --> SUSPENDED : SagaEndedEvent
 
-ACTIVE --> PARTIALLY_COMMITTED : TXEndedEvent
-
-ACTIVE --> FAILED : TXAbortedEvent
+IDEL --> SUSPENDED : SagaAbortedEvent
 
 PARTIALLY_COMMITTED --> COMMITTED : SagaEndedEvent
 
-PARTIALLY_COMMITTED --> PARTIALLY_ACTIVE : TXStartedEvent
+PARTIALLY_COMMITTED --> PARTIALLY_ACTIVE : TxStartedEvent
 
-PARTIALLY_ACTIVE --> PARTIALLY_COMMITTED : TXEndedEvent
+PARTIALLY_COMMITTED --> FAILED : SagaAbortedEvent
 
-PARTIALLY_ACTIVE --> FAILED : TXAbortedEvent
+PARTIALLY_ACTIVE --> PARTIALLY_COMMITTED : TxEndedEvent
 
-FAILED --> COMPENSATED : Successful full compensation
+PARTIALLY_ACTIVE --> FAILED : TxAbortedEvent
+
+PARTIALLY_ACTIVE --> SUSPENDED : TxTimeoutEvent
+
+PARTIALLY_ACTIVE --> SUSPENDED : SagaTimeoutEvent
+
+SUSPENDED --> SUSPENDED : SagaTimeoutEvent
+
+FAILED --> COMPENSATED : SagaAbortedEvent( or timout)
+
+FAILED --> FAILED : TxComponsited
 
 COMPENSATED --> [*]
 
 COMMITTED --> [*]
 
-ACTIVE : new tx state
+SUSPENDED --> [*]
 
-PARTIALLY_COMMITTED : tell tx state
+PARTIALLY_COMMITTED : update tx state
 
 PARTIALLY_ACTIVE : new tx state
 
