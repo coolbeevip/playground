@@ -91,6 +91,26 @@ public class MyService {
   @SneakyThrows
   @Timeout(value = 4000)
   @Transactional
+  public void blockedOfBusyCPU(List<User> users) {
+    try {
+      log.info("Transaction begin");
+      log.info("execution...");
+      for (User user : users) {
+        userRepository.save(user);
+      }
+      while(true){
+        log.info("busy");
+        Thread.sleep(1); //Ensure CPU IDLE through static code checking. In short, we need it
+      }
+    } catch (Throwable e) {
+      log.info("Transaction rollback");
+      throw e;
+    }
+  }
+
+  @SneakyThrows
+  @Timeout(value = 4000)
+  @Transactional
   public void blockedOfThreadJoin(List<User> users, long simulate_time) {
     try {
       log.info("Transaction begin");

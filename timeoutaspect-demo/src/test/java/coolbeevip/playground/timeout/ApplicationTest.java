@@ -136,6 +136,18 @@ public class ApplicationTest {
     }
   }
 
+  @Test
+  public void timeoutWithBlockedOfBusyCPUTest() throws TimeoutAbortedException {
+    try {
+      List<User> users = new ArrayList<>();
+      users.add(User.builder().id(1).name("zhanglei").build());
+      myService.blockedOfBusyCPU(users);
+    } catch (Exception e) {
+      log.error(e.getMessage());
+    } finally {
+      Assert.assertEquals(myService.count(), 0l);
+    }
+  }
 
   @Test
   public void timeoutWithBlockedIOTest() throws TimeoutAbortedException {
