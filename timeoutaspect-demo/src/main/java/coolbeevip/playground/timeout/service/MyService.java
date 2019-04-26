@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -24,12 +23,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MyService {
 
-  private ThreadLocal<String> threadLocal = new ThreadLocal<>();
-
   private final Lock lock = new ReentrantLock();
 
   @Autowired
   private UserRepository userRepository;
+
+  @Autowired
+  private ThreadContextHolder threadContextHolder;
 
   @SneakyThrows
   @Timeout(value = 4000)
@@ -75,7 +75,8 @@ public class MyService {
   @Async
   @Timeout(value = 4000)
   @Transactional
-  public void blockedOfAsync(List<User> users, long simulate_time) {
+  public void blockedOfAsync(List<User> users, long simulate_time, String val) {
+    this.threadContextHolder.set(val);
     try {
       log.info("Transaction begin");
       log.info("execution...");
@@ -102,7 +103,7 @@ public class MyService {
       for (User user : users) {
         userRepository.save(user);
       }
-      while(true){
+      while (true) {
         log.info("busy");
         Thread.sleep(1); //Ensure CPU IDLE through static code checking. In short, we need it
       }
@@ -126,11 +127,11 @@ public class MyService {
       Thread t1 = new Thread(new Runnable() {
         @Override
         public void run() {
-          try{
-            while (true){
+          try {
+            while (true) {
 
             }
-          }catch (Exception e){
+          } catch (Exception e) {
             e.printStackTrace();
           }
         }
@@ -201,13 +202,13 @@ public class MyService {
       new File(name).deleteOnExit();
       RandomAccessFile raf = new RandomAccessFile(name, "rw");
       FileChannel fc = raf.getChannel();
-      try{
+      try {
         ByteBuffer buffer = ByteBuffer.wrap(new String("1").getBytes());
-        while (true){
+        while (true) {
           fc.write(buffer);
         }
-      }finally {
-        if(fc!=null){
+      } finally {
+        if (fc != null) {
           fc.close();
         }
       }
@@ -220,12 +221,30 @@ public class MyService {
   @SneakyThrows
   @Timeout(value = 4000)
   @Transactional
-  public void blockedOfNesting(List<User> users){
+  public void blockedOfNesting(List<User> users) {
     try {
       log.info("Transaction begin");
       log.info("execution...");
       userRepository.save(users.get(0));
       this.blockedOfIO(Arrays.asList(users.get(1)));
+    } catch (Throwable e) {
+      log.info("Transaction rollback");
+      throw e;
+    }
+  }
+
+  @SneakyThrows
+  @Timeout(value = 4000)
+  @Transactional
+  public void blockedOfWaitWithThreadLocal(List<User> users, long simulate_time, String val) {
+    threadContextHolder.set(val);
+    try {
+      log.info("Transaction begin");
+      log.info("execution...");
+      userRepository.save(users.get(0));
+      if (simulate_time > 0) {
+        Thread.currentThread().wait(simulate_time);
+      }
     } catch (Throwable e) {
       log.info("Transaction rollback");
       throw e;
@@ -260,6 +279,7 @@ public class MyService {
   }
 
   static class MySM extends SecurityManager {
+
     public void checkAccess(Thread t) {
       throw new SecurityException("simulation");
     }

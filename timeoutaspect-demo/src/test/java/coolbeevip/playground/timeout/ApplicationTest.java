@@ -4,6 +4,7 @@ import coolbeevip.playground.timeout.exception.TimeoutAbortedException;
 import coolbeevip.playground.timeout.exception.TimeoutAbortedFailureException;
 import coolbeevip.playground.timeout.jpa.User;
 import coolbeevip.playground.timeout.service.MyService;
+import coolbeevip.playground.timeout.service.ThreadContextHolder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +25,9 @@ public class ApplicationTest {
 
   @Autowired
   MyService myService;
+
+  @Autowired
+  private ThreadContextHolder threadContextHolder;
 
   @Before
   public void before() {
@@ -98,14 +102,16 @@ public class ApplicationTest {
 
   @Test
   public void timeoutWithBlockedOfAsyncTest() throws TimeoutAbortedException {
+    String thread_local_val = "me2";
     try {
       List<User> users = new ArrayList<>();
       users.add(User.builder().id(1).name("zhanglei").build());
-      myService.blockedOfAsync(users, 5000);
+      myService.blockedOfAsync(users, 5000,thread_local_val);
     } catch (Exception e) {
       log.error(e.getMessage());
     } finally {
       Assert.assertEquals(myService.count(), 0l);
+      Assert.assertEquals(threadContextHolder.get(),thread_local_val);
     }
   }
 
@@ -172,6 +178,21 @@ public class ApplicationTest {
     } catch (Exception e) {
       log.error(e.getMessage());
     } finally {
+      Assert.assertEquals(myService.count(), 0l);
+    }
+  }
+
+  @Test
+  public void timeoutWithBlockedOfWaitWithThreadLocalTest() throws TimeoutAbortedException {
+    String thread_local_val = "me";
+    try {
+      List<User> users = new ArrayList<>();
+      users.add(User.builder().id(1).name("zhanglei").build());
+      myService.blockedOfWaitWithThreadLocal(users,5000,thread_local_val);
+    } catch (Exception e) {
+      log.error(e.getMessage());
+    } finally {
+      Assert.assertEquals(threadContextHolder.get(),thread_local_val);
       Assert.assertEquals(myService.count(), 0l);
     }
   }
