@@ -162,6 +162,20 @@ public class ApplicationTest {
     }
   }
 
+  @Test
+  public void timeoutWithBlockedNestingTest() throws TimeoutAbortedException {
+    try {
+      List<User> users = new ArrayList<>();
+      users.add(User.builder().id(1).name("zhanglei").build());
+      users.add(User.builder().id(2).name("coolbeevip").build());
+      myService.blockedOfNesting(users);
+    } catch (Exception e) {
+      log.error(e.getMessage());
+    } finally {
+      Assert.assertEquals(myService.count(), 0l);
+    }
+  }
+
   @Test(expected = TimeoutAbortedFailureException.class)
   public void timeoutWithAccessRejectionTest() throws TimeoutAbortedException {
       List<User> users = new ArrayList<>();

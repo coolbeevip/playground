@@ -7,6 +7,8 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
@@ -21,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 public class MyService {
+
+  private ThreadLocal<String> threadLocal = new ThreadLocal<>();
 
   private final Lock lock = new ReentrantLock();
 
@@ -187,7 +191,6 @@ public class MyService {
   @Timeout(value = 4000)
   @Transactional
   public void blockedOfIO(List<User> users) {
-
     try {
       log.info("Transaction begin");
       log.info("execution...");
@@ -208,6 +211,21 @@ public class MyService {
           fc.close();
         }
       }
+    } catch (Throwable e) {
+      log.info("Transaction rollback");
+      throw e;
+    }
+  }
+
+  @SneakyThrows
+  @Timeout(value = 4000)
+  @Transactional
+  public void blockedOfNesting(List<User> users){
+    try {
+      log.info("Transaction begin");
+      log.info("execution...");
+      userRepository.save(users.get(0));
+      this.blockedOfIO(Arrays.asList(users.get(1)));
     } catch (Throwable e) {
       log.info("Transaction rollback");
       throw e;

@@ -164,7 +164,7 @@ public class TimeoutCommand {
           throw e;
         }
         final Method method = MethodSignature.class.cast(this.joinPoint.getSignature()).getMethod();
-        log.warn("{}: interrupted on {}ms timeout (over {}ms)",
+        log.debug("{}: interrupted on {}ms timeout (over {}ms)",
             new Object[]{method, System.currentTimeMillis() - this.startTime,
                 this.expireTime - this.startTime}
         );
