@@ -1,7 +1,9 @@
 package coolbeevip.playground.timeout.annotations;
 
-import coolbeevip.playground.timeout.exception.TimeoutAspectException;
+import coolbeevip.playground.timeout.exception.TimeoutAbortedException;
+import coolbeevip.playground.timeout.exception.TimeoutAbortedFailureException;
 import java.lang.reflect.Method;
+import java.nio.channels.ClosedByInterruptException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Executors;
@@ -31,7 +33,11 @@ public class TimeoutCommand {
         new Runnable() {
           @Override
           public void run() {
-            TimeoutCommand.this.interrupt();
+            try{
+              TimeoutCommand.this.interrupt();
+            }catch (Exception e){
+              log.error("",e);
+            }
           }
         },
         0, omegaTimeoutCommandDelayMillis, TimeUnit.MICROSECONDS
@@ -48,12 +54,18 @@ public class TimeoutCommand {
     Object output;
     try {
       output = point.proceed();
-    } catch (InterruptedException e){
-      // 捕获线程中断异常，抛出自定义异常
-      throw new TimeoutAspectException(e);
-    } catch (Throwable e){
+      if(timeoutTrace.getInterruptFailureException()!=null){
+        throw new TimeoutAbortedFailureException(timeoutTrace.interruptFailureException);
+      }
+    } catch (InterruptedException e) {
+      throw new TimeoutAbortedException(e);
+    } catch (IllegalMonitorStateException e) {
+      throw new TimeoutAbortedException(e);
+    } catch (ClosedByInterruptException e) {
+      throw new TimeoutAbortedException(e);
+    } catch (Throwable e) {
       throw e;
-    }finally {
+    } finally {
       this.timeoutTraces.remove(timeoutTrace);
     }
     return output;
@@ -81,9 +93,11 @@ public class TimeoutCommand {
   private void interrupt() {
     synchronized (this.interrupter) {
       for (TimeoutTrace timeoutTrace : this.timeoutTraces) {
-        if (timeoutTrace.expired()) {
-          if (timeoutTrace.interrupted()) {
-            this.timeoutTraces.remove(timeoutTrace);
+        if(timeoutTrace.interruptFailureException == null){
+          if (timeoutTrace.expired()) {
+            if (timeoutTrace.interrupted()) {
+              this.timeoutTraces.remove(timeoutTrace);
+            }
           }
         }
       }
@@ -91,8 +105,7 @@ public class TimeoutCommand {
   }
 
   /**
-   * 超时跟踪类
-   * 跟踪每个方法的超时时间，并负责中断线程
+   * 超时跟踪类 跟踪每个方法的超时时间，并负责中断线程
    */
   private static final class TimeoutTrace implements
       Comparable<TimeoutTrace> {
@@ -100,6 +113,7 @@ public class TimeoutCommand {
     private final transient Thread thread = Thread.currentThread();
     private final transient long startTime = System.currentTimeMillis();
     private final transient long expireTime;
+    private Exception interruptFailureException = null;
     private final transient ProceedingJoinPoint joinPoint;
 
     public TimeoutTrace(final ProceedingJoinPoint pnt, Timeout timeoutConfig) {
@@ -120,6 +134,10 @@ public class TimeoutCommand {
       return compare;
     }
 
+    public Exception getInterruptFailureException() {
+      return interruptFailureException;
+    }
+
     /**
      * 超时判断
      *
@@ -138,7 +156,13 @@ public class TimeoutCommand {
       boolean interrupted;
       if (this.thread.isAlive()) {
         // 如果当前线程是活动状态，则发送线程中断信号
-        this.thread.interrupt();
+        try{
+          this.thread.interrupt();
+        }catch (Exception e){
+          this.interruptFailureException = e;
+          log.info("Failed to interrupt the thread "+this.thread.getName(),e);
+          throw e;
+        }
         final Method method = MethodSignature.class.cast(this.joinPoint.getSignature()).getMethod();
         log.warn("{}: interrupted on {}ms timeout (over {}ms)",
             new Object[]{method, System.currentTimeMillis() - this.startTime,
