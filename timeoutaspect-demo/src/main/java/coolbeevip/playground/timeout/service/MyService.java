@@ -143,6 +143,9 @@ public class MyService {
   @SneakyThrows
   @Timeout(value = 4000)
   @Transactional
+  /**
+   * Note: Synchronization cannot be used, otherwise it will not be interrupted
+   * */
   public void blockedOfLock(List<User> users, long simulate_time) {
     lock.lockInterruptibly();
     try {

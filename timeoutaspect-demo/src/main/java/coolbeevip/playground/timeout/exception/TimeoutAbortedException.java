@@ -1,5 +1,8 @@
 package coolbeevip.playground.timeout.exception;
 
+/**
+ * Timeout terminated and successfully rollback
+ * */
 public class TimeoutAbortedException extends RuntimeException {
 
   public TimeoutAbortedException() {
