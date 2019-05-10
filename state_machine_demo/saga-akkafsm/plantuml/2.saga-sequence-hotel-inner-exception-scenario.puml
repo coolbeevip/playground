@@ -1,0 +1,186 @@
+@startuml
+
+autonumber
+skinparam sequence {
+  ParticipantFontSize 12
+  ParticipantBorderColor #454545
+  ParticipantBackgroundColor White
+
+  LifeLineBorderColor #454545
+  ArrowColor #454545
+}
+
+participant USER order 1
+participant BOOKING order 2
+participant CAR order 3
+participant HOTEL order 4
+participant RPC order 5
+participant Saga1_FSM order 6
+participant Tx1_FSM order 7
+participant Tx2_FSM order 7
+
+box ALPHA #LightBlue
+	participant RPC
+	participant Saga1_FSM
+	participant Tx1_FSM
+	participant Tx2_FSM
+end box
+
+USER -> BOOKING: request
+activate BOOKING
+
+== Saga[1] Transaction Begin ==
+
+BOOKING -> RPC : SagaStartedEvent
+activate BOOKING #00CC33
+activate RPC
+create Saga1_FSM
+RPC -> Saga1_FSM: create
+note over of Saga1_FSM: IDEL
+Saga1_FSM --> RPC
+RPC --> BOOKING
+deactivate BOOKING
+deactivate RPC
+BOOKING -> BOOKING
+
+== Tx[1] Transaction ==
+
+BOOKING -> CAR
+activate CAR
+CAR -> RPC : TxStartedEvent
+activate CAR #00CC33
+activate RPC
+RPC -> Saga1_FSM: TxStartedEvent
+activate Saga1_FSM
+create Tx1_FSM
+Saga1_FSM -> Tx1_FSM: TxStartedEvent
+note over of Tx1_FSM: IDEL
+Tx1_FSM --> Saga1_FSM
+note over of Saga1_FSM: IDEL + TxStartedEvent = PARTIALLY_ACTIVE
+Saga1_FSM --> RPC
+deactivate Saga1_FSM
+RPC --> CAR
+deactivate CAR
+deactivate RPC
+CAR -> CAR: do something
+CAR -> RPC : TxEndedEvent
+activate CAR #00CC33
+activate RPC
+RPC -> Saga1_FSM: TxEndedEvent
+activate Saga1_FSM
+Saga1_FSM -> Tx1_FSM: TxEndedEvent
+activate Tx1_FSM
+note over of Tx1_FSM: IDEL + TxEndedEvent = COMMITTED
+Tx1_FSM --> Saga1_FSM
+deactivate Tx1_FSM
+note over of Saga1_FSM: PARTIALLY_ACTIVE + TxEndedEvent = PARTIALLY_COMMITTED
+Saga1_FSM --> RPC
+deactivate Saga1_FSM
+RPC --> CAR
+deactivate CAR
+deactivate RPC
+CAR --> BOOKING
+deactivate CAR
+BOOKING -> BOOKING
+
+== Tx[N] Transaction ==
+
+BOOKING -> HOTEL
+activate HOTEL
+HOTEL -> RPC : TxStartedEvent
+activate HOTEL #00CC33
+activate RPC
+RPC -> Saga1_FSM
+activate Saga1_FSM
+create Tx2_FSM
+Saga1_FSM -> Tx2_FSM
+note over Tx2_FSM: IDEL
+Tx2_FSM --> Saga1_FSM
+note over of Saga1_FSM: PARTIALLY_COMMITTED + TxStartedEvent = PARTIALLY_ACTIVE
+Saga1_FSM --> RPC
+deactivate Saga1_FSM
+RPC --> HOTEL
+deactivate HOTEL
+deactivate RPC
+HOTEL x-[#C70039]> HOTEL: throw hotel exception
+HOTEL -> RPC : TxAbortedEvent
+activate HOTEL #00CC33
+activate RPC
+RPC -> Saga1_FSM: TxAbortedEvent
+activate Saga1_FSM
+Saga1_FSM -> Tx2_FSM: TxAbortedEvent
+activate Tx2_FSM
+note over Tx2_FSM: IDEL + TxAbortedEvent = FAILED
+Tx2_FSM -> Saga1_FSM
+deactivate Tx2_FSM
+note over Saga1_FSM: PARTIALLY_ACTIVE + TxAbortedEvent = FAILED
+Saga1_FSM --> RPC
+
+RPC --> HOTEL
+deactivate RPC
+deactivate HOTEL
+HOTEL --[#C70039]> BOOKING : throw hotel internal exception
+deactivate HOTEL
+
+loop Tx...FSM
+alt state is COMMITTED
+Saga1_FSM -> Tx1_FSM: TxCompensateEvent
+deactivate Saga1_FSM
+activate Tx1_FSM
+Tx1_FSM -> CAR: do compensate
+activate CAR #00CC33
+CAR -> CAR: cancel something
+activate CAR
+deactivate CAR
+note over Tx1_FSM: COMMITTED + TxCompensateEvent = COMPENSATED
+CAR --> Tx1_FSM
+deactivate CAR
+deactivate Tx1_FSM
+
+CAR -> RPC: TxComponsitedEvent
+activate CAR #00CC33
+activate RPC
+RPC -> Saga1_FSM: TxComponsitedEvent
+activate Saga1_FSM
+alt Tx exist COMMITTED
+note over Saga1_FSM: FAILED + TxComponsitedEvent = FAILED
+
+else Tx not exist COMMITTED
+Saga1_FSM -> Tx1_FSM: destroy
+activate Tx1_FSM
+Tx1_FSM --> Saga1_FSM
+deactivate Tx1_FSM
+destroy Tx1_FSM
+Saga1_FSM -> Tx2_FSM: destroy
+activate Tx2_FSM
+Tx2_FSM --> Saga1_FSM
+destroy Tx2_FSM
+deactivate Tx2_FSM
+note over Saga1_FSM: FAILED + TxComponsitedEvent = COMPENSATED
+end
+
+
+Saga1_FSM --> RPC
+deactivate Saga1_FSM
+destroy Saga1_FSM
+RPC --> CAR
+deactivate RPC
+deactivate CAR
+end
+end
+
+== Saga[1] Transaction End ==
+
+activate BOOKING #00CC33
+
+autonumber 36
+BOOKING -[#C70039]> BOOKING : throw hotel exception
+note over of BOOKING #FFAAAA
+ If it is an internal exception of hotel,
+ don't need to send SageAbortedEvent again.
+end note
+
+BOOKING --[#C70039]> USER
+deactivate BOOKING
+
+@enduml

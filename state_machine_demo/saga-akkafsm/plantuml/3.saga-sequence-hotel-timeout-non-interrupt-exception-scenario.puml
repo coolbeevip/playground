@@ -87,7 +87,7 @@ BOOKING -> BOOKING
 == Tx[N] Transaction ==
 
 BOOKING -> HOTEL
-note right #FFAAAA: 13 Must configure timeout
+note right #FFAAAA: omega timeout is non-empty
 activate HOTEL
 HOTEL -> RPC : TxStartedEvent
 activate HOTEL #00CC33
@@ -109,7 +109,7 @@ HOTEL -[#C70039]> HOTEL : throw timeout exception
 activate HOTEL #00CC33
 deactivate HOTEL
 note left #FFAAAA
- 17 The thread will be terminated and
+ The thread interrupted and
  throw timeout exception when timeout
 end note
 HOTEL -[#C70039]> HOTEL: rollback something

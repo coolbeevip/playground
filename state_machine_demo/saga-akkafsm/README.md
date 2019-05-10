@@ -1,86 +1,110 @@
-# Saga
+# Saga 状态机设计
 
-### Event Definition
+### 事件定义
 
 - E<sub>ss</sub> SagaStartedEvent 
 - E<sub>se</sub> SagaEndedEvent
-- E<sub>sa</sub>SagaAbortedEvent  (Tx抛出非超时异常时发送)
-- E<sub>so</sub>SagaTimeoutEvent (Tx抛出超时异常时发送)
+- E<sub>sa</sub> SagaAbortedEvent
+- E<sub>so</sub> SagaTimeoutEvent
 - E<sub>ts</sub> TxStartedEvent
 - E<sub>te</sub> TxEndedEvent
-- E<sub>ta</sub> TxAbortedEvent (Tx内部方法抛出非超时异常时)
-- E<sub>to</sub> TxTimeoutEvent (Tx内部方法抛出超时异常时)
-- E<sub>co</sub> TxCompensateEvent
-- IE<sub>sfc</sub> Internal Event Successful full compensation
+- E<sub>ta</sub> TxAbortedEvent
+- E<sub>to</sub> TxTimeoutEvent
+- E<sub>tm</sub> TxComponsitedEvent
 
+### 状态机设计
 
+状态机由Saga 状态机（全局事务）、Tx 状态机（子事务）组成
 
-### Saga Sequence Diagram
-
-正常时序图
-
-| id | current state       | event              | next state          |
-|----| ------------------- | ------------------ | ------------------- |
-|1| START               | SagaStartedEvent-1 | IDEL                |
-|2| IDEL                | TxStartedEvent-11  | PARTIALLY_ACTIVE    |
-|3| PARTIALLY_ACTIVE    | TxEndedEvent-11    | PARTIALLY_COMMITTED |
-|4| PARTIALLY_COMMITTED | TxStartedEvent-12  | PARTIALLY_ACTIVE    |
-|5| PARTIALLY_ACTIVE    | TxEndedEvent-12    | PARTIALLY_COMMITTED |
-|6| PARTIALLY_COMMITTED | SagaEndedEvent-1   | END                 |
-
-![image-20190420005126848](assets/sequence-booking-normal.png)
-
-异常时序图
-
-| id | current state       | event              | next state          |
-|----| ------------------- | ------------------ | ------------------- |
-|1| START               | SagaStartedEvent-1 | IDEL                |
-|2| IDEL                | TxStartedEvent-11  | PARTIALLY_ACTIVE    |
-|3| PARTIALLY_ACTIVE    | TxEndedEvent-11    | PARTIALLY_COMMITTED |
-|4| PARTIALLY_COMMITTED | TxStartedEvent-12  | PARTIALLY_ACTIVE    |
-|5| PARTIALLY_ACTIVE    | TxEndedEvent-12    | PARTIALLY_COMMITTED |
-|6| PARTIALLY_COMMITTED | SagaEndedEvent-1   | END                 |
-
-
-![image-20190420005126848](assets/saga_state_table.png)
+#### Saga 状态机
 
 ![saga_state_diagram](assets/saga_state_diagram.png)
 
-* 正常状态事件
+| <font size=1>State (Current/Next)</font> | <font size=1>IDEL</font>           | <font size=1>PARTIALLY_ACTIVE</font> | <font size=1>PARTIALLY_COMMITTED</font> | <font size=1>FAILED</font>         | <font size=1>COMPENSATED</font>    | <font size=1>COMMITTED</font>      | <font size=1>SUSPENDED</font>                       |
+| ---------------------------------------- | ---------------------------------- | ------------------------------------ | --------------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | --------------------------------------------------- |
+| <font size=1>IDEL</font>                 | <font size=1>E<sub>ss</sub></font> | <font size=1>E<sub>ts</sub></font>   |                                         |                                    |                                    |                                    | <font size=1>E<sub>se</sub> / E<sub>sa</sub></font> |
+| <font size=1>PARTIALLY_ACTIVE</font>     |                                    |                                      | <font size=1>E<sub>te</sub></font>      | <font size=1>E<sub>ta</sub></font> |                                    |                                    | <font size=1>E<sub>to</sub> / E<sub>so</sub></font> |
+| <font size=1>PARTIALLY_COMMITTED</font>  |                                    | <font size=1>E<sub>ts</sub></font>   |                                         | <font size=1>E<sub>sa</sub></font> |                                    | <font size=1>E<sub>se</sub></font> |                                                     |
+| <font size=1>FAILED</font>               |                                    |                                      |                                         | <font size=1>E<sub>tm</sub></font> | <font size=1>E<sub>tm</sub></font> |                                    |                                                     |
+| <font size=1>COMPENSATED</font>          |                                    |                                      |                                         |                                    |                                    |                                    |                                                     |
+| <font size=1>COMMITTED</font>            |                                    |                                      |                                         |                                    |                                    |                                    |                                                     |
+| <font size=1>SUSPENDED</font>            |                                    |                                      |                                         |                                    |                                    |                                    |                                                     |
 
-  SagaStartedEvent-1
-  TxStartedEvent-1
-  TxEndedEvent-1
-  TxStartedEvent-2
-  TxEndedEvent-2
-  SagaEndedEvent-1
+**注意：** FALIED + E<sub>tm</sub> = COMPENSATED 只有在所有 Committed Tx 都补偿完毕后会触发 
+
+#### Tx 状态机
+
+![image-20190510094215976](assets/tx_state_diagram.png)
+
+| <font size=1>State (Current/Next)</font> | <font size=1>IDEL</font>           | <font size=1>ACTIVE</font>         | <font size=1>FAILED</font>         | <font size=1>COMMITTED</font>      | <font size=1>COMPENSATED</font>    |
+| ---------------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- |
+| <font size=1>IDEL</font>                 | <font size=1>E<sub>ss</sub></font> | <font size=1>E<sub>ts</sub></font> |                                    |                                    |                                    |
+| <font size=1>ACTIVE</font>               |                                    |                                    | <font size=1>E<sub>te</sub></font> |                                    | <font size=1>E<sub>ta</sub></font> |
+| <font size=1>FAILED</font>               |                                    |                                    |                                    | <font size=1>E<sub>ts</sub></font> |                                    |
+| <font size=1>COMMITTED</font>            |                                    |                                    | <font size=1>E<sub>te</sub></font> |                                    | <font size=1>E<sub>ta</sub></font> |
+| <font size=1>COMPENSATED</font>          |                                    |                                    |                                    |                                    |                                    |
+
+
+
+### 时序图
+
+* 正常时序图
+
+![image-20190510094215976](assets/saga-sequence-successful-scenario.png)
+
+按照以上场景，共发送6个事件，下表描述了正常情况下状态和事件的组合转换过程
+
+| <font size=2>id</font> | <font size=2>current state</font>       | <font size=2>event</font>              | <font size=2>next state</font>          |
+|----| ------------------- | ------------------ | ------------------- |
+|<font size=2>1</font>| <font size=2>START</font>               | <font size=2>SagaStartedEvent-1</font> | <font size=2>IDEL</font>               |
+|<font size=2>2</font>| <font size=2>IDEL</font>                | <font size=2>TxStartedEvent-11</font>  | <font size=2>PARTIALLY_ACTIVE</font>    |
+|<font size=2>3</font>| <font size=2>PARTIALLY_ACTIVE</font>    | <font size=2>TxEndedEvent-11</font>    | <font size=2>PARTIALLY_COMMITTED</font> |
+|<font size=2>4</font>| <font size=2>PARTIALLY_COMMITTED</font> | <font size=2>TxStartedEvent-12</font>  | <font size=2>PARTIALLY_ACTIVE</font>    |
+|<font size=2>5</font>| <font size=2>PARTIALLY_ACTIVE</font>    | <font size=2>TxEndedEvent-12</font>    | <font size=2>PARTIALLY_COMMITTED</font> |
+|<font size=2>6</font>| <font size=2>PARTIALLY_COMMITTED</font> | <font size=2>SagaEndedEvent-1</font>   | <font size=2>END</font>                 |
+
+
+* 异常时序图(酒店服务内部异常)
+
+![image-20190510103456016](assets/saga-sequence-hotel-inner-exception-scenario.png)
+
+按照以上场景，共发送6个事件，下表描述了正常情况下状态和事件的组合转换过程，这里需要注意的是如果BOOKING捕获的是HOTEL的内部异常，那么不需要再发送SagaAbortedEvent事件，补偿的发起由Saga状态机状态转换到FAILED时触发[34]，Saga状态机会发送 TxCompensateEvent 事件给状态是 COMMITED 的Tx状态机[38]，补偿执行完毕后CAR服务会发送 TxCompensitedEvent 给 Saga 状态机[42]，Saga 状态机判断如果还有处于 COMMITED 的Tx时则保持自身状态 FAILED 不变[43]，否则修改自身状态为 COMPENSATED[44]
+
+**注意：**此时BOOKING收到异常和ALPHA进行的事物补偿是异步进行的，此时BOOKING要考虑自身情况决定下一步的动作（强烈不建议自动重试）
+
+**注意：**因为TxCompensateEvent是Saga发给Tx的内部事件，所以在状态图和状态表中没有体现
+
+| <font size=2>id</font> | <font size=2>current state</font>       | <font size=2>event</font>              | <font size=2>next state</font>          |
+|----| ------------------- | ------------------ | ------------------- |
+|<font size=2>1</font>| <font size=2>START</font>             | <font size=2>SagaStartedEvent-1</font> | <font size=2>IDEL</font>                |
+|<font size=2>2</font>| <font size=2>IDEL</font>                | <font size=2>TxStartedEvent-11</font>  | <font size=2>PARTIALLY_ACTIVE</font>    |
+|<font size=2>3</font>| <font size=2>PARTIALLY_ACTIVE</font>    | <font size=2>TxEndedEvent-11</font>    | <font size=2>PARTIALLY_COMMITTED</font> |
+|<font size=2>4</font>| <font size=2>PARTIALLY_COMMITTED</font> | <font size=2>TxStartedEvent-12</font>  | <font size=2>PARTIALLY_ACTIVE</font>    |
+|<font size=2>5</font>| <font size=2>PARTIALLY_ACTIVE</font>    | <font size=2>TxAbortedEvent-12</font>  | <font size=2>FAILED</font> |
+|<font size=2>6</font>| <font size=2>FAILED</font> | <font size=2>TxComponsitedEvent-11</font>   | <font size=2>COMPENSATED</font>                 |
+
+
+* 异常时序图(酒店服务超时异常时中断线程成功)
+
+![image-1](assets/saga-sequence-hotel-timeout-interrupted-exception-scenario.png)
+
+此场景和酒店服务内部异常处理流程类似，因为线程中断后会抛出 TransactionTimeoutException ，然后HOTEL发送 TxAbortedEvent 事件
+
+**注意：** Omega设置的超时时间必须小于 request 的超时时间和 connect 的超时时间[23]
+
+**注意：**Omega超时后有可能会出现线程无法中断的情况，这个时候不会发送 TxAbortedEvent 事件[31]，此时最终可能会导致BOOKING收到超时异常，这种情况会在 `异常时序图(酒店服务超时异常时中断线程失败)` 讨论
+
+
+* 异常时序图(酒店服务超时异常时中断线程失败)
 
   
 
-* 异常状态事件：Tx2异常
+* 异常时序图(酒店服务失败后补偿异常)
 
-  SagaStartedEvent-1
-  TxStartedEvent-1
-  TxEndedEvent-1
-  TxStartedEvent-2
-  TxAbortedEvent-2
-  SagaAbortedEvent-1
+* 异常时序图(Omega发送SagaEndedEvent通信异常)
 
-  
+* 异常时序图(Omega发送TxStartedEvent通信异常)
 
-* 异常状态事件：Tx2超时
-
-  SagaStartedEvent-1
-  TxStartedEvent-1
-  TxEndedEvent-1
-  TxStartedEvent-2
-  TxAbortedEvent-2
-  SagaAbortedEvent-1
-
-* Tx State Machine
-  ![image-20190420005126848](assets/tx_state_table.png)
-
-  ![tx_state_diagram](assets/tx_state_diagram.png)
 
 * Reference
 

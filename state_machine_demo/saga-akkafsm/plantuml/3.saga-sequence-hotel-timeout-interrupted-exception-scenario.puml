@@ -86,18 +86,25 @@ BOOKING -> BOOKING
 == Tx[N] Transaction ==
 
 BOOKING -> HOTEL
+note right #FFAAAA: omega timeout < request timeout
 activate HOTEL
 HOTEL -> RPC : TxStartedEvent
 activate HOTEL #00CC33
 activate RPC
+RPC -> Saga1_FSM
+activate Saga1_FSM
 create Tx2_FSM
-RPC -> Tx2_FSM
+Saga1_FSM -> Tx2_FSM
 note over Tx2_FSM: IDEL
-Tx2_FSM --> RPC
+Tx2_FSM --> Saga1_FSM
+note over of Saga1_FSM: PARTIALLY_COMMITTED + TxStartedEvent = PARTIALLY_ACTIVE
+Saga1_FSM --> RPC
+deactivate Saga1_FSM
 RPC --> HOTEL
 deactivate HOTEL
 deactivate RPC
-HOTEL x-[#C70039]> HOTEL: throw hotel exception
+HOTEL x-[#C70039]> HOTEL: throw TransactionTimeoutException
+note left #FFAAAA: thread interrupted when timeout
 HOTEL -> RPC : TxAbortedEvent
 activate HOTEL #00CC33
 activate RPC
@@ -108,7 +115,7 @@ activate Tx2_FSM
 note over Tx2_FSM: IDEL + TxAbortedEvent = FAILED
 Tx2_FSM -> Saga1_FSM
 deactivate Tx2_FSM
-note over Saga1_FSM: PARTIALLY_COMMITTED + TxAbortedEvent = FAILED
+note over Saga1_FSM: PARTIALLY_ACTIVE + TxAbortedEvent = FAILED
 Saga1_FSM --> RPC
 
 RPC --> HOTEL
