@@ -29,7 +29,7 @@
 | <font size=1>COMMITTED</font>            |                                    |                                      |                                         |                                    |                                    |                                    |                                                     |
 | <font size=1>SUSPENDED</font>            |                                    |                                      |                                         |                                    |                                    |                                    |                                                     |
 
-**注意：** FALIED + E<sub>tm</sub> = COMPENSATED 只有在所有 Committed Tx 都补偿完毕后会触发 
+**注意：** FALIED + E<sub>tm</sub> = COMPENSATED 只有在所有状态是 Committed 的 Tx 都补偿完毕后会触发 
 
 #### Tx 状态机
 
