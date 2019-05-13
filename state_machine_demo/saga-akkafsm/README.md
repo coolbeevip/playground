@@ -137,6 +137,23 @@
 
 
 
+* 异常时序图（订单服务异常）
+
+![image-20190513160304768](assets/saga-sequence-booking-exception-scenario.png)
+
+以上场景是CAR，HOTEL都调用成功后BOOKING服务异常，进程补偿
+
+**注意：** 以上时序图应该简化了 `TxComponsitedEvent` 事件，此处需要讨论此事件是否需要发送，还是根据补偿方法执行成功就认为补偿成功
+
+| <font size=2>id</font> | <font size=2>current state</font>       | <font size=2>event</font>              | <font size=2>next state</font>          |
+|----| ------------------- | ------------------ | ------------------- |
+|<font size=2>1</font>| <font size=2>START</font>             | <font size=2>SagaStartedEvent-1</font> | <font size=2>IDEL</font>                |
+|<font size=2>2</font>| <font size=2>IDEL</font>                | <font size=2>TxStartedEvent-11</font>  | <font size=2>PARTIALLY_ACTIVE</font>    |
+|<font size=2>3</font>| <font size=2>PARTIALLY_ACTIVE</font>    | <font size=2>TxEndedEvent-11</font>    | <font size=2>PARTIALLY_COMMITTED</font> |
+|<font size=2>4</font>| <font size=2>PARTIALLY_COMMITTED</font> | <font size=2>TxStartedEvent-12</font>  | <font size=2>PARTIALLY_ACTIVE</font>    |
+|<font size=2>5</font>| <font size=2>PARTIALLY_ACTIVE</font>    | <font size=2>TxEndedEvent-12</font> | <font size=2>PARTIALLY_COMMITTED</font> |
+|<font size=2>6</font>| <font size=2>PARTIALLY_COMMITTED</font> | <font size=2>SagaAbortedEvent-1</font> | <font size=2>COMPENSATED</font>                 |
+
 
 * 异常时序图(Omega发送SagaEndedEvent通信异常)
 

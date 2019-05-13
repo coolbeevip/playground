@@ -131,27 +131,44 @@ BOOKING x-[#C70039]> BOOKING : throw booking exception
 BOOKING -> RPC : SagaAbortedEvent
 activate BOOKING #00CC33
 activate RPC
-RPC -\\ Saga1_FSM: SagaAbortedEvent
+RPC -> Saga1_FSM: SagaAbortedEvent
 activate Saga1_FSM
 RPC --> BOOKING
 deactivate BOOKING
 deactivate RPC
+
 loop Tx...FSM
 alt state is COMMITTED
-Saga1_FSM -\\ Tx1_FSM: SagaAbortedEvent
-deactivate Saga1_FSM
+Saga1_FSM -> Tx1_FSM: SagaAbortedEvent
 activate Tx1_FSM
 Tx1_FSM -> CAR
 activate CAR #00CC33
-CAR -[#C70039]> CAR: cancel something
+CAR -> CAR: cancel something
 activate CAR
 deactivate CAR
-note over Tx1_FSM: COMMITTED + TxCompensateEvent = COMPENSATED
+note over Tx1_FSM: COMMITTED + TxComponsitedEvent = COMPENSATED
 CAR --> Tx1_FSM
+destroy Tx1_FSM
 deactivate Tx1_FSM
 deactivate CAR
+Saga1_FSM -> Tx2_FSM: SagaAbortedEvent
+activate Tx2_FSM
+Tx2_FSM -> HOTEL
+activate HOTEL #00CC33
+HOTEL -> HOTEL: cancel something
+activate HOTEL
+deactivate HOTEL
+note over Tx2_FSM: COMMITTED + TxComponsitedEvent = COMPENSATED
+HOTEL --> Tx2_FSM
+destroy Tx2_FSM
+deactivate Tx2_FSM
+deactivate HOTEL
 end
 end
+
+Saga1_FSM -> Saga1_FSM
+note over Saga1_FSM :PARTIALLY_COMMITTED + SagaAbortedEvent = COMPENSATED
+destroy Saga1_FSM
 
 autonumber 42
 BOOKING --[#C70039]> USER
