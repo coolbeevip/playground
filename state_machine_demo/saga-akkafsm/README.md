@@ -9,7 +9,6 @@
 - E<sub>ts</sub> TxStartedEvent
 - E<sub>te</sub> TxEndedEvent
 - E<sub>ta</sub> TxAbortedEvent
-- E<sub>to</sub> TxTimeoutEvent
 - E<sub>tm</sub> TxComponsitedEvent
 
 ### 状态机设计
@@ -23,7 +22,7 @@
 | <font size=1>State (Current/Next)</font> | <font size=1>IDEL</font>           | <font size=1>PARTIALLY_ACTIVE</font> | <font size=1>PARTIALLY_COMMITTED</font> | <font size=1>FAILED</font>         | <font size=1>COMPENSATED</font>    | <font size=1>COMMITTED</font>      | <font size=1>SUSPENDED</font>                       |
 | ---------------------------------------- | ---------------------------------- | ------------------------------------ | --------------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | --------------------------------------------------- |
 | <font size=1>IDEL</font>                 | <font size=1>E<sub>ss</sub></font> | <font size=1>E<sub>ts</sub></font>   |                                         |                                    |                                    |                                    | <font size=1>E<sub>se</sub> / E<sub>sa</sub></font> |
-| <font size=1>PARTIALLY_ACTIVE</font>     |                                    |                                      | <font size=1>E<sub>te</sub></font>      | <font size=1>E<sub>ta</sub></font> |                                    |                                    | <font size=1>E<sub>to</sub> / E<sub>so</sub></font> |
+| <font size=1>PARTIALLY_ACTIVE</font>     |                                    |                                      | <font size=1>E<sub>te</sub></font>      | <font size=1>E<sub>ta</sub></font> |                                    |                                    | <font size=1>E<sub>so</sub></font>                  |
 | <font size=1>PARTIALLY_COMMITTED</font>  |                                    | <font size=1>E<sub>ts</sub></font>   |                                         | <font size=1>E<sub>sa</sub></font> |                                    | <font size=1>E<sub>se</sub></font> |                                                     |
 | <font size=1>FAILED</font>               |                                    |                                      |                                         | <font size=1>E<sub>tm</sub></font> | <font size=1>E<sub>tm</sub></font> |                                    |                                                     |
 | <font size=1>COMPENSATED</font>          |                                    |                                      |                                         |                                    |                                    |                                    |                                                     |
@@ -84,7 +83,7 @@
 |<font size=2>6</font>| <font size=2>FAILED</font> | <font size=2>TxComponsitedEvent-11</font>   | <font size=2>COMPENSATED</font>                 |
 
 
-* 异常时序图(酒店服务超时异常时中断线程成功)
+* 异常时序图(酒店服务超时异常-中断线程成功)
 
 ![image-1](assets/saga-sequence-hotel-timeout-interrupted-exception-scenario.png)
 
@@ -95,14 +94,28 @@
 **注意：**Omega超时后有可能会出现线程无法中断的情况，这个时候不会发送 TxAbortedEvent 事件[31]，此时最终可能会导致BOOKING收到超时异常，这种情况会在 `异常时序图(酒店服务超时异常时中断线程失败)` 讨论
 
 
-* 异常时序图(酒店服务超时异常时中断线程失败)
 
-  
+
+* 异常时序图(酒店服务超时异常-中断线程失败)
+
+![image-20190513095152745](assets/saga-sequence-hotel-timeout-non-interrupt-exception-scenario.png)
+
+以上场景是HOTEL服务调用异常的特殊情况（在酒店服务调用可能成功或者失败前请求超时异常 `java.net.SocketTimeoutException`，或者网络异常 `java.net.ConnectException`），在BOOKING收到异常时HOTEL服务的Saga事物状态不确定，为了避免问题进一步扩大，此处将Saga事物状态设置为 `SUSPENDED` ，等待人工介入处理
+
+**注意：** 为了尽可能避免以上问题的发生可以设置Omega超时时间，并且小于 request 的超时时间和 connect 的超时时间，这样在大部分情况下HOTEL处理线程都可以被终止，并且发送 `TxAbortedEvent` 事件，这样处理过程就变成了 `异常时序图(酒店服务超时异常-中断线程成功)`
+
+| <font size=2>id</font> | <font size=2>current state</font>                            | <font size=2>event</font>                                    | <font size=2>next state</font>                              |
+| ---------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | ----------------------------------------------------------- |
+| <font size=2>1</font>  | <font size=2>START</font>                                    | <font size=2>SagaStartedEvent-1</font>                       | <font size=2>IDEL</font>                                    |
+| <font size=2>2</font>  | <font size=2>IDEL</font>                                     | <font size=2>TxStartedEvent-11</font>                        | <font size=2>PARTIALLY_ACTIVE</font>                        |
+| <font size=2>3</font>  | <font size=2>PARTIALLY_ACTIVE</font>                         | <font size=2>TxEndedEvent-11</font>                          | <font size=2>PARTIALLY_COMMITTED</font>                     |
+| <font size=2>4</font>  | <font size=2>PARTIALLY_COMMITTED</font>                      | <font size=2>TxStartedEvent-12</font>                        | <font size=2>PARTIALLY_ACTIVE</font>                        |
+| <font size=2>5</font>  | <font size=2>PARTIALLY_ACTIVE</font>                         | <font size=2 color=red>TxEndedEvent-12 or TxAbortedEvent-12</font> | <font size=2 color=red>PARTIALLY_COMMITTED or FAILED</font> |
+| <font size=2>6</font>  | <font size=2 color=red>PARTIALLY_ACTIVE or PARTIALLY_COMMITTED or FAILED</font> | <font size=2>SagaTimeoutEvent-1</font>                       | <font size=2>SUSPEDNED</font>                               |
+
 
 * 异常时序图(酒店服务失败后补偿异常)
-
 * 异常时序图(Omega发送SagaEndedEvent通信异常)
-
 * 异常时序图(Omega发送TxStartedEvent通信异常)
 
 

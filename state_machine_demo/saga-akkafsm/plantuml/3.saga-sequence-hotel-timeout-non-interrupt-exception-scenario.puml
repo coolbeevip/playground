@@ -2,7 +2,6 @@
 
 autonumber
 skinparam sequence {
-  ParticipantPadding 20
   ParticipantFontSize 12
   ParticipantBorderColor #454545
   ParticipantBackgroundColor White
@@ -18,7 +17,7 @@ participant HOTEL order 4
 participant RPC order 5
 participant Saga1_FSM order 6
 participant Tx1_FSM order 7
-participant Tx2_FSM order 8
+participant Tx2_FSM order 7
 
 box ALPHA #LightBlue
 	participant RPC
@@ -51,13 +50,13 @@ activate CAR
 CAR -> RPC : TxStartedEvent
 activate CAR #00CC33
 activate RPC
-RPC -> Saga1_FSM
+RPC -> Saga1_FSM: TxStartedEvent
 activate Saga1_FSM
 create Tx1_FSM
-Saga1_FSM -> Tx1_FSM: create
+Saga1_FSM -> Tx1_FSM: TxStartedEvent
 note over of Tx1_FSM: IDEL
 Tx1_FSM --> Saga1_FSM
-note over of Saga1_FSM : IDEL + TxStartedEvent = PARTIALLY_ACTIVE
+note over of Saga1_FSM: IDEL + TxStartedEvent = PARTIALLY_ACTIVE
 Saga1_FSM --> RPC
 deactivate Saga1_FSM
 RPC --> CAR
@@ -67,14 +66,14 @@ CAR -> CAR: do something
 CAR -> RPC : TxEndedEvent
 activate CAR #00CC33
 activate RPC
-RPC -> Saga1_FSM
+RPC -> Saga1_FSM: TxEndedEvent
 activate Saga1_FSM
-Saga1_FSM -> Tx1_FSM
+Saga1_FSM -> Tx1_FSM: TxEndedEvent
 activate Tx1_FSM
 note over of Tx1_FSM: IDEL + TxEndedEvent = COMMITTED
 Tx1_FSM --> Saga1_FSM
 deactivate Tx1_FSM
-note over of Saga1_FSM : PARTIALLY_ACTIVE + TxEndedEvent = PARTIALLY_COMMITTED
+note over of Saga1_FSM: PARTIALLY_ACTIVE + TxEndedEvent = PARTIALLY_COMMITTED
 Saga1_FSM --> RPC
 deactivate Saga1_FSM
 RPC --> CAR
@@ -87,51 +86,60 @@ BOOKING -> BOOKING
 == Tx[N] Transaction ==
 
 BOOKING -> HOTEL
-note right #FFAAAA: omega timeout is non-empty
 activate HOTEL
+note over HOTEL #FFAAAA: omega timeout is empty or request timeout > omega timeout
 HOTEL -> RPC : TxStartedEvent
 activate HOTEL #00CC33
 activate RPC
 RPC -> Saga1_FSM
 activate Saga1_FSM
 create Tx2_FSM
-Saga1_FSM -> Tx2_FSM: create
-note over of Tx2_FSM: IDEL
+Saga1_FSM -> Tx2_FSM
+note over Tx2_FSM: IDEL
 Tx2_FSM --> Saga1_FSM
-note over of Saga1_FSM : PARTIALLY_COMMITTED + TxStartedEvent = PARTIALLY_ACTIVE
+note over of Saga1_FSM: PARTIALLY_COMMITTED + TxStartedEvent = PARTIALLY_ACTIVE
 Saga1_FSM --> RPC
 deactivate Saga1_FSM
 RPC --> HOTEL
 deactivate HOTEL
+HOTEL -> HOTEL
 deactivate RPC
-HOTEL -> HOTEL: hotel do something
-HOTEL -[#C70039]> HOTEL : throw timeout exception
+HOTEL -> RPC : ?
 activate HOTEL #00CC33
+activate RPC
+RPC -> Saga1_FSM: ?
+activate Saga1_FSM
+Saga1_FSM -> Tx2_FSM: ?
+activate Tx2_FSM
+note over Tx2_FSM #FFAAAA: FAILED or COMMITTED
+Tx2_FSM -> Saga1_FSM
+deactivate Tx2_FSM
+note over Saga1_FSM #FFAAAA: PARTIALLY_COMsaga-sequence-hotel-timeout-non-interrupt-exception-scenarioMITTED or FAILED
+Saga1_FSM --> RPC
+deactivate Saga1_FSM
+RPC --> HOTEL
+deactivate RPC
 deactivate HOTEL
-note left #FFAAAA
- The thread interrupted and
- throw timeout exception when timeout
-end note
-HOTEL -[#C70039]> HOTEL: rollback something
-HOTEL --[#C70039]> BOOKING
+note over HOTEL #FFAAAA : if request timeout exception, the HOTEL state of being uncertain
+autonumber 30
+HOTEL --[#C70039]> BOOKING : request timeout exception
 deactivate HOTEL
+
 
 == Saga[1] Transaction End ==
 
-BOOKING -[#C70039]> RPC : SagaAbortedEvent
 activate BOOKING #00CC33
-RPC --[#C70039]> BOOKING
-deactivate BOOKING
+autonumber 36
+BOOKING -> RPC : SagaTimeoutEvent
+activate RPC
+RPC -> Saga1_FSM : SagaTimeoutEvent
+activate Saga1_FSM
+note over of Saga1_FSM: SUSPENDED
+Saga1_FSM --> RPC
+deactivate Saga1_FSM
+RPC --> BOOKING
+deactivate RPC
 BOOKING --[#C70039]> USER
-
-loop committed transactions
-RPC -[#C70039]> CAR : compensate
-activate CAR #00CC33
-CAR -[#C70039]> CAR: cancel something
-activate CAR
-deactivate CAR
-CAR --[#C70039]> RPC
-deactivate CAR
-end
+deactivate BOOKING
 
 @enduml

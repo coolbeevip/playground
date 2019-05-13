@@ -15,17 +15,19 @@ PARTIALLY_COMMITTED --> PARTIALLY_ACTIVE : TxStartedEvent
 
 PARTIALLY_COMMITTED --> FAILED : SagaAbortedEvent
 
+PARTIALLY_COMMITTED --> SUSPENDED : SagaTimeoutEvent
+
 PARTIALLY_ACTIVE --> PARTIALLY_COMMITTED : TxEndedEvent
 
 PARTIALLY_ACTIVE --> FAILED : TxAbortedEvent
-
-PARTIALLY_ACTIVE --> SUSPENDED : TxTimeoutEvent
 
 PARTIALLY_ACTIVE --> SUSPENDED : SagaTimeoutEvent
 
 SUSPENDED --> SUSPENDED : SagaTimeoutEvent
 
 FAILED --> COMPENSATED : TxComponsitedEvent(not exist committed tx)
+
+FAILED --> SUSPENDED : SagaTimeoutEvent
 
 FAILED --> FAILED : TxComponsitedEvent
 
