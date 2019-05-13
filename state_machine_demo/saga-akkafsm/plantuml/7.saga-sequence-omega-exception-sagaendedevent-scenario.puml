@@ -1,0 +1,141 @@
+@startuml
+
+autonumber
+skinparam sequence {
+  ParticipantFontSize 12
+  ParticipantBorderColor #454545
+  ParticipantBackgroundColor White
+
+  LifeLineBorderColor #454545
+  ArrowColor #454545
+}
+
+participant USER order 1
+participant BOOKING order 2
+participant CAR order 3
+participant HOTEL order 4
+participant RPC order 5
+participant Saga1_FSM order 6
+participant Tx1_FSM order 7
+participant Tx2_FSM order 8
+
+box ALPHA #LightBlue
+	participant RPC
+	participant Saga1_FSM
+	participant Tx1_FSM
+	participant Tx2_FSM
+end box
+
+USER -> BOOKING: request
+activate BOOKING
+
+== Saga[1] Transaction Begin ==
+
+BOOKING -> RPC : SagaStartedEvent
+activate BOOKING #00CC33
+activate RPC
+create Saga1_FSM
+RPC -> Saga1_FSM: create
+note over of Saga1_FSM: IDEL
+Saga1_FSM --> RPC
+RPC --> BOOKING
+deactivate BOOKING
+deactivate RPC
+
+BOOKING -> BOOKING: do something
+
+== Tx[1] Transaction ==
+
+BOOKING -> CAR
+activate CAR
+CAR -> RPC : TxStartedEvent
+activate CAR #00CC33
+activate RPC
+RPC -> Saga1_FSM: TxStartedEvent
+activate Saga1_FSM
+create Tx1_FSM
+Saga1_FSM -> Tx1_FSM: create
+note over of Tx1_FSM: IDEL
+Tx1_FSM --> Saga1_FSM
+note over of Saga1_FSM : IDEL + TxStartedEvent = PARTIALLY_ACTIVE
+Saga1_FSM --> RPC
+deactivate Saga1_FSM
+RPC --> CAR
+deactivate CAR
+deactivate RPC
+CAR -> CAR
+CAR -> RPC : TxEndedEvent
+activate CAR #00CC33
+activate RPC
+RPC -> Saga1_FSM: TxEndedEvent
+activate Saga1_FSM
+Saga1_FSM -> Tx1_FSM: TxEndedEvent
+activate Tx1_FSM
+note over of Tx1_FSM: IDEL + TxEndedEvent = COMMITTED
+Tx1_FSM --> Saga1_FSM
+deactivate Tx1_FSM
+note over of Saga1_FSM : PARTIALLY_ACTIVE + TxEndedEvent = PARTIALLY_COMMITTED
+Saga1_FSM --> RPC
+deactivate Saga1_FSM
+RPC --> CAR
+deactivate CAR
+deactivate RPC
+CAR --> BOOKING
+deactivate CAR
+BOOKING -> BOOKING: do something
+
+== Tx[N] Transaction ==
+
+BOOKING -> HOTEL
+activate HOTEL
+HOTEL -> RPC : TxStartedEvent
+activate HOTEL #00CC33
+activate RPC
+RPC -> Saga1_FSM: TxStartedEvent
+activate Saga1_FSM
+create Tx2_FSM
+Saga1_FSM -> Tx2_FSM: create
+note over of Tx2_FSM: IDEL
+Tx2_FSM --> Saga1_FSM
+note over of Saga1_FSM : PARTIALLY_COMMITTED + TxStartedEvent = PARTIALLY_ACTIVE
+Saga1_FSM --> RPC
+deactivate Saga1_FSM
+RPC --> HOTEL
+deactivate HOTEL
+deactivate RPC
+HOTEL -> HOTEL
+HOTEL -> RPC : TxEndedEvent
+activate HOTEL #00CC33
+activate RPC
+RPC -> Saga1_FSM: TxEndedEvent
+activate Saga1_FSM
+Saga1_FSM -> Tx2_FSM: TxEndedEvent
+activate Tx2_FSM
+note over of Tx2_FSM: IDEL + TxEndedEvent = COMMITTED
+Tx2_FSM --> Saga1_FSM
+deactivate Tx2_FSM
+note over of Saga1_FSM : PARTIALLY_ACTIVE + TxEndedEvent = PARTIALLY_COMMITTED
+Saga1_FSM --> RPC
+
+RPC --> HOTEL
+deactivate HOTEL
+deactivate RPC
+HOTEL --> BOOKING
+deactivate HOTEL
+
+BOOKING -> BOOKING: do something
+
+== Saga[1] Transaction End ==
+
+BOOKING -[#C70039]>x RPC: SagaEndedEvent
+activate BOOKING #00CC33
+alt if Saga timeout >0
+Saga1_FSM -> Saga1_FSM
+note over Saga1_FSM: PARTIALLY_COMMITTED + timeout = SUSPENDED
+end
+RPC --[#C70039]> BOOKING
+deactivate BOOKING
+
+BOOKING --> USER
+
+@enduml

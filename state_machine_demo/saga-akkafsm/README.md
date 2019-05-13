@@ -155,20 +155,30 @@
 |<font size=2>6</font>| <font size=2>PARTIALLY_COMMITTED</font> | <font size=2>SagaAbortedEvent-1</font> | <font size=2>COMPENSATED</font>                 |
 
 
+
+
 * 异常时序图(Omega发送SagaEndedEvent通信异常)
 
-  未开始
+![image-20190513175813161](assets/saga-sequence-omega-exception-sagaendedevent-scenario.png)
+
+以上场景是最后发送 `SagaEndedEvent` 失败的情况，如果Saga配置了timeout，那么在超时后Saga状态自动变成 `SUSPENDED` 
+
+**注意：** Saga超时如何设置？经验值？（是否可以根据实际执行时长移动平均后取3Sigma）
+
+**注意：** 如果Saga没有设置超时，那么Saga状态将一直处于 `PARTIALLY_COMMITTED` 状态，除非收到 `SagaEndedEvent` 后事务结束，这样就需要 SagaEndedEvent 需要重发机制（待讨论）
+
 
 * 异常时序图(Omega发送TxStartedEvent通信异常)
 
   未开始
 
-### 其他建议
+### 其他
 
 * 挂起的事物需要有一种机制可以及时通知用户，挂起的事物是是否协助用户自动调用用户定义稽核方法，做最后一次校验？或者MQ通知用户？
 * 挂起的事物需要有详细的调用过程清单或者拓扑已便于用户手动分析
 * 频繁失败的某类事物Alpha是否要拒绝冷却一段时间？
 * 关于请求超时，网络超时，Omega超时，Saga超时需要有一个推荐配置，例如必须设置Omega超时，Omega超时必须在所有超时中最小等等。或者根据Omega的超时设置，动态修改请求的超时时间=Omega超时时间+N秒
+* 挂起的状态如何持久化，并从持久化中恢复
 
 ### Reference
 
