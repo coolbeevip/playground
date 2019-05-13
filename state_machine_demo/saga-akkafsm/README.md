@@ -153,11 +153,8 @@
 * 频繁失败的某类事物Alpha是否要拒绝冷却一段时间？
 * 关于请求超时，网络超时，Omega超时，Saga超时需要有一个推荐配置，例如必须设置Omega超时，Omega超时必须在所有超时中最小等等。或者根据Omega的超时设置，动态修改请求的超时时间=Omega超时时间+N秒
 
+### Reference
 
-* Reference
-
-  * [servicecomb](https://cwiki.apache.org/confluence/display/SERVICECOMB/Using+StateMachine+for+tracing+the+transaction+states)
-  * [state transition table](https://en.wikipedia.org/wiki/State_transition_table)
-  * [uml](http://plantuml.com/en/)
+* [servicecomb](https://cwiki.apache.org/confluence/display/SERVICECOMB/Using+StateMachine+for+tracing+the+transaction+states)
 
 
