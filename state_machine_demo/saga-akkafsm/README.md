@@ -154,9 +154,6 @@
 |<font size=2>5</font>| <font size=2>PARTIALLY_ACTIVE</font>    | <font size=2>TxEndedEvent-12</font> | <font size=2>PARTIALLY_COMMITTED</font> |
 |<font size=2>6</font>| <font size=2>PARTIALLY_COMMITTED</font> | <font size=2>SagaAbortedEvent-1</font> | <font size=2>COMPENSATED</font>                 |
 
-
-
-
 * 异常时序图(Omega发送SagaEndedEvent通信异常)
 
 ![image-20190513175813161](assets/saga-sequence-omega-exception-sagaendedevent-scenario.png)
@@ -168,9 +165,21 @@
 **注意：** 如果Saga没有设置超时，那么Saga状态将一直处于 `PARTIALLY_COMMITTED` 状态，除非收到 `SagaEndedEvent` 后事务结束，这样就需要 SagaEndedEvent 需要重发机制（待讨论）
 
 
+
+
 * 异常时序图(Omega发送TxStartedEvent通信异常)
 
-  未开始
+![image-20190513220239362](assets/saga-sequence-omega-exception-txstartedevent-scenario.png)
+
+以上场景是Omega RPC 请求失败后抛出 `OmegaException`  给 BOOKING，BOOKING发送 `SagaAbortedEvent`  事件实现事务的补偿，事件与状态组合如下
+
+| <font size=2>id</font> | <font size=2>current state</font>       | <font size=2>event</font>              | <font size=2>next state</font>          |
+|----| ------------------- | ------------------ | ------------------- |
+|<font size=2>1</font>| <font size=2>START</font>             | <font size=2>SagaStartedEvent-1</font> | <font size=2>IDEL</font>                |
+|<font size=2>2</font>| <font size=2>IDEL</font>                | <font size=2>TxStartedEvent-11</font>  | <font size=2>PARTIALLY_ACTIVE</font>    |
+|<font size=2>3</font>| <font size=2>PARTIALLY_ACTIVE</font>    | <font size=2>TxEndedEvent-11</font>    | <font size=2>PARTIALLY_COMMITTED</font> |
+|<font size=2>4</font>| <font size=2>PARTIALLY_COMMITTED</font> | <font size=2>SagaAbortedEvent-1</font> | <font size=2>FAILED</font> |
+|<font size=2>5</font>| <font size=2>FAILED</font> | <font size=2>Tx call Saga FSM</font> | <font size=2>COMPENSATED</font> |
 
 ### 其他
 
