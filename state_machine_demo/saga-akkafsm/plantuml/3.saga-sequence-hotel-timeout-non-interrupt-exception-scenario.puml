@@ -114,7 +114,7 @@ activate Tx2_FSM
 note over Tx2_FSM #FFAAAA: FAILED or COMMITTED
 Tx2_FSM -> Saga1_FSM
 deactivate Tx2_FSM
-note over Saga1_FSM #FFAAAA: PARTIALLY_COMsaga-sequence-hotel-timeout-non-interrupt-exception-scenarioMITTED or FAILED
+note over Saga1_FSM #FFAAAA: PARTIALLY_COMMITTED or FAILED
 Saga1_FSM --> RPC
 deactivate Saga1_FSM
 RPC --> HOTEL
