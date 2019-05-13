@@ -79,11 +79,11 @@ In the above scenario, a total of 6 events are sent. The following table describ
 
 In the above scenario, a total of 6 events are sent. The following table describes the event sending sequence and status changes. It should be noted here that if BOOKING catches the internal exception of the HOTEL, then there is no need to send the SagaAbortedEvent event. The compensation trigger is triggered by the Saga state machine state to FAILED [34], and the Saga state machine sends the TxCompensateEvent event to the Tx state machine whose current state is COMMITTED [38]. After the compensation is completed, the CAR service will send TxCompensitedEvent to the Saga state machine [42]. The Saga state machine will judge the state of all Tx state machines. If there is still a  COMMITTED state of the Tx, the Tx keep FAILED state [43] otherwise, modify Saga  status to COMPENSATED[44]
 
-**注意：**BOOKING收到异常和ALPHA进行的事物补偿是异步进行的，此时BOOKING要考虑自身情况决定下一步的动作（强烈不建议自动重试）
+**注意：** BOOKING收到异常和ALPHA进行的事物补偿是异步进行的，此时BOOKING要考虑自身情况决定下一步的动作（强烈不建议自动重试）
 
 **NOTE：** BOOKING receives exceptions and ALPHA's transaction compensation is asynchronous, BOOKING should consider its own situation to determine the next action (strongly not recommended automatic retry)
 
-**注意：**因为TxCompensateEvent是Saga发给Tx的内部事件，所以在状态图和状态表中没有体现
+**注意：** 因为TxCompensateEvent是Saga发给Tx的内部事件，所以在状态图和状态表中没有体现
 
 **NOTE：** Because TxCompensateEvent is an internal event sent by Saga to Tx, it is not reflected in the state diagram and state table.
 
@@ -202,9 +202,15 @@ The above scenario describes the event compensation of the BOOKING service excep
 
 以上场景是最后发送 `SagaEndedEvent` 失败的情况，如果Saga配置了timeout，那么在超时后Saga状态自动变成 `SUSPENDED` 
 
+The above scenario is the case where the last send `SagaEndedEvent` fails. If Saga configures timeout, the Saga state automatically becomes `SUSPENDED` after the timeout.
+
 **注意：** Saga超时如何设置？经验值？（是否可以根据实际执行时长移动平均后取3Sigma）
 
+**NOTE：** How to set Saga timeout, Experience value? (Or 3 Sigma be taken after moving the average according to the actual execution time?)
+
 **注意：** 如果Saga没有设置超时，那么Saga状态将一直处于 `PARTIALLY_COMMITTED` 状态，除非收到 `SagaEndedEvent` 后事务结束，这样就需要 SagaEndedEvent 需要重发机制（待讨论）
+
+**NOTE：** If Saga does not set a timeout, the Saga state will remain `PARTIALLY_COMMITTED` , unless the transaction ends after receiving `SagaEndedEvent`, which requires a resend mechanism for SagaEndedEvent (to be discussed)
 
 
 
