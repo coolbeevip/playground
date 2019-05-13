@@ -116,7 +116,27 @@
 
 * 异常时序图(酒店服务失败后补偿异常)
 
-  未开始
+![image-20190513152610572](assets/saga-sequence-hotel-inner-exception-compensate-exception-scenario.png)
+
+以上场景是调用HOTEL补偿方法时失败（在进程N此重试失败后），将Saga事物状态设置为 `SUSPENDED`，等待人工介入处理（这与原来的进行事务补偿失败后自动重试，直到成功的方式不同）
+
+**注意：** 补偿失败后将永远不在进行补偿，进入挂起状态，等待人工介入
+
+**注意：** 是否考虑允许用户定义补偿失败的策略，例如补偿几次，每次补偿间隔时间等
+
+**注意：** 补偿失败后Saga状态的设置由TxFSM发起，此时在以下事件列表并没有体现（这可能不利于挂起原因的跟踪，是否考虑内部事件也进行记录）
+
+| <font size=2>id</font> | <font size=2>current state</font>       | <font size=2>event</font>              | <font size=2>next state</font>          |
+|----| ------------------- | ------------------ | ------------------- |
+|<font size=2>1</font>| <font size=2>START</font>             | <font size=2>SagaStartedEvent-1</font> | <font size=2>IDEL</font>                |
+|<font size=2>2</font>| <font size=2>IDEL</font>                | <font size=2>TxStartedEvent-11</font>  | <font size=2>PARTIALLY_ACTIVE</font>    |
+|<font size=2>3</font>| <font size=2>PARTIALLY_ACTIVE</font>    | <font size=2>TxEndedEvent-11</font>    | <font size=2>PARTIALLY_COMMITTED</font> |
+|<font size=2>4</font>| <font size=2>PARTIALLY_COMMITTED</font> | <font size=2>TxStartedEvent-12</font>  | <font size=2>PARTIALLY_ACTIVE</font>    |
+|<font size=2>5</font>| <font size=2>PARTIALLY_ACTIVE</font>    | <font size=2>TxAbortedEvent-12</font>  | <font size=2>FAILED</font> |
+|<font size=2>6</font>| <font size=2>FAILED</font> | <font size=2>TxFSM call SagaFSM</font> | <font size=2>SUSPENDED</font>        |
+
+
+
 
 * 异常时序图(Omega发送SagaEndedEvent通信异常)
 

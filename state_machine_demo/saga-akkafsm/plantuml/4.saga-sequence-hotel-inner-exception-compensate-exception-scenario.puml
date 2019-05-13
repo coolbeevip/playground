@@ -129,27 +129,33 @@ activate CAR #00CC33
 CAR -[#C70039]>x CAR: cancel something
 activate CAR
 deactivate CAR
-CAR --[#C70039]> Tx1_FSM
+CAR --[#C70039]> Tx1_FSM: throw exception
 deactivate CAR
 deactivate Tx1_FSM
-alt last retry
-CAR -> RPC: SagaSuspendedEvent
-activate CAR #00CC33
-activate RPC
-RPC -> Saga1_FSM: SagaSuspendedEvent
+end
+
+Tx1_FSM -> Saga1_FSM
+activate Tx1_FSM
 activate Saga1_FSM
-note over Saga1_FSM: FAILED + SagaSuspendedEvent = SUSPENDED
-Saga1_FSM --> RPC
-deactivate Saga1_FSM
-destroy Saga1_FSM
-RPC --> CAR
-deactivate RPC
-deactivate CAR
+note over Saga1_FSM: SUSPENDED
+Saga1_FSM --> Tx1_FSM
+deactivate Tx1_FSM
 end
 end
 
-end
-end
+
+Saga1_FSM -> Tx1_FSM
+activate Tx1_FSM
+Tx1_FSM --> Saga1_FSM
+deactivate Tx1_FSM
+destroy Tx1_FSM
+Saga1_FSM -> Tx2_FSM
+activate Tx2_FSM
+Tx2_FSM --> Saga1_FSM
+deactivate Tx2_FSM
+destroy Tx2_FSM
+deactivate Saga1_FSM
+destroy Saga1_FSM
 
 == Saga[1] Transaction End ==
 
@@ -157,10 +163,6 @@ activate BOOKING #00CC33
 
 autonumber 36
 BOOKING -[#C70039]> BOOKING : throw hotel exception
-note over of BOOKING #FFAAAA
- 如何提示用户事务已经挂起？
-end note
-
 BOOKING --[#C70039]> USER
 deactivate BOOKING
 
