@@ -115,8 +115,16 @@
 
 
 * 异常时序图(酒店服务失败后补偿异常)
+
+  未开始
+
 * 异常时序图(Omega发送SagaEndedEvent通信异常)
+
+  未开始
+
 * 异常时序图(Omega发送TxStartedEvent通信异常)
+
+  未开始
 
 
 * Reference
