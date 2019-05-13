@@ -143,7 +143,7 @@
 
 以上场景是CAR，HOTEL都调用成功后BOOKING服务异常，进程补偿
 
-**注意：** 以上时序图应该简化了 `TxComponsitedEvent` 事件，此处需要讨论此事件是否需要发送，还是根据补偿方法执行成功就认为补偿成功
+**注意：** 以上时序图简化了 `TxComponsitedEvent` 事件发送过程，此处需要讨论此事件是否需要发送，还是根据补偿方法执行成功就认为补偿成功
 
 | <font size=2>id</font> | <font size=2>current state</font>       | <font size=2>event</font>              | <font size=2>next state</font>          |
 |----| ------------------- | ------------------ | ------------------- |
