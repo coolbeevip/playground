@@ -66,29 +66,43 @@ The state machine consists of a Saga state machine (global transaction) and a Tx
 
   空闲状态：状态实例创建后的初始化状态
 
+  Initialization state after the state instance is created
+
 * PARTIALLY_ACTIVE 
 
-  部分子事务激活状态：表示已经收到了事务开始事件  `TxStartedEvent`
+  部分子事务激活状态：收到了子事务开始事件  `TxStartedEvent` 后的状态
+
+  Status after receiving `TxStartedEvent`
 
 * PARTIALLY_COMMITTED 
 
   部分子事务已提交状态：表示已经收到了事务结束事件 `TxEndedEvent`
 
+  Status after receiving  `TxEndedEvent`
+
 * FAILED 
 
   失败状态：全局事务失败状态，当收到 `TxAbortedEvent` 或者 `SagaAbortedEvent` 事件满足进入此状态后将对所有已提交的子事务进行补偿，补偿全部成功后进入 `COMPENSATED` 状态，补偿失败后进入 `SUSPENDED` 状态
+
+  Global transaction failed, Compensation for all committed state sub-transactions after receiving `TxAbortedEvent` 或者 `SagaAbortedEvent` , After the compensation is successful, the status change to `COMPENSATED`, otherwise it change to `SUSPENDED`
 
 * COMMITTED 
 
   已提交状态：全局事务正常结束状态，所有子事物都已经提交
 
+  it is final state, global transaction and sub-transaction committed
+
 * COMPENSATED 
 
   已补偿状态：全局事务正常结束状态，所有已经提交的子事务补偿成功
 
+  it is final state, all sub-transactions compensate successfully
+
 * SUSPENDED
 
   事件挂起状态：全局事务异常结束状态，当出现不符合预期的事件状态组合（IDEL + SagaEndedEvent）或者Omega异常（java.net.ConnectException）时将进入挂起状态，设计挂起状态的目的是为了避免问题扩散，此时需要人工介入处理
+
+  it is final state, global transaction ended abnormally, when there is an unexpected combination of event states or Omega exception, it will change to suspended state. The suspended state is designed to avoid problem proliferation, which requires manual intervention, manual intervention is required at this time.
 
 | <font size=1>State (Current/Next)</font> | <font size=1>IDEL</font>           | <font size=1>PARTIALLY_ACTIVE</font> | <font size=1>PARTIALLY_COMMITTED</font> | <font size=1>FAILED</font>         | <font size=1>COMPENSATED</font>    | <font size=1>COMMITTED</font>      | <font size=1>SUSPENDED</font>                       |
 | ---------------------------------------- | ---------------------------------- | ------------------------------------ | --------------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | --------------------------------------------------- |
@@ -114,21 +128,31 @@ The state machine consists of a Saga state machine (global transaction) and a Tx
 
   空闲状态：状态实例创建后的初始化状态
 
+  Initialization state after the state instance is created
+
 - ACTIVE
 
   激活状态：事务已经开始还未结束时的状态
+
+  Status after receiving `TxStartedEvent`
 
 * FAILED
 
   失败状态：子事务结束状态，事务失败
 
+  Status after receiving `TxAbortedEvent`
+
 * COMMITTED
 
   已提交状态：子事务结束状态，事务已经提交
 
+  it is final state, the sub-transaction committed
+
 * COMPENSATED
 
   已补偿状态：子事务结束状态，事务已经补偿
+
+  it is final state, the sub-transactions compensate successfully
 
 | <font size=1>State (Current/Next)</font> | <font size=1>IDEL</font>           | <font size=1>ACTIVE</font>         | <font size=1>FAILED</font>         | <font size=1>COMMITTED</font>      | <font size=1>COMPENSATED</font>    |
 | ---------------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- |
