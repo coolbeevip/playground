@@ -2,14 +2,53 @@
 
 ### 事件定义(Event Definition)
 
-- E<sub>ss</sub> SagaStartedEvent 
+- E<sub>ss</sub> SagaStartedEvent
+
+  全局事务启动事件
+
+  it is the event to start a global transaction
+
 - E<sub>se</sub> SagaEndedEvent
+
+  全局事务结束事件
+
+  it is the event to close a global transaction
+
 - E<sub>sa</sub> SagaAbortedEvent
+
+  全局事务失败事件，会触发全局事务中的子事务进行补偿，补偿全部成功后状态变为 `COMPENSATED`  补偿失败状态变为 `SUSPENDED`
+
+  it is the event to abort a global transaction and cause the sub-transactions to do the compensate, the status will change to `COMPENSATED` after successfully compensating all sub-transactions, otherwise it will be changed to `SUSPENDED`
+
 - E<sub>so</sub> SagaTimeoutEvent
+
+  全局事务超时事件，当全局事务请求出现网络超时、请求超时或者其他通信异常（我们需要定义一个触发此事件的正向异常集合或者反向异常集合）将发送此事件，这时无法确定Alpha是否成功处理了这次请求，所以此事件将导致全局事务挂起，这个事件与 `SagaAbortedEvent` 事件的区别是收到到此事件后不会进行补偿操作
+
+  it is the event to timeout a global transaction, the event is sent when network connection timeout, or  request timeout or other communication exception (we need to define a forward exception set or a reverse exception set that triggers this event). At this time, it is impossible to determine whether Alpha successfully processed the request so this event will cause the global transaction to `SUSPENDED`. The only difference between this event and the `SagaAbortedEvent` event is that no compensation is done.
+
 - E<sub>ts</sub> TxStartedEvent
+
+  子事务启动事件
+
+  it is the event to start a sub-transaction
+
 - E<sub>te</sub> TxEndedEvent
+
+  子事务结束事件
+
+  it is the event to close a sub-transaction
+
 - E<sub>ta</sub> TxAbortedEvent
+
+  子事务失败事件
+
+  it is the event to abort a sub-transaction
+
 - E<sub>tm</sub> TxComponsitedEvent
+
+  子事务补偿成功事件
+
+  it is the event to componsited a sub-transaction
 
 ### 状态机设计（State Machine Design）
 
@@ -20,6 +59,36 @@ The state machine consists of a Saga state machine (global transaction) and a Tx
 #### Saga 状态机（Saga State Machine）
 
 ![saga_state_diagram](assets/saga_state_diagram.png)
+
+##### Saga 状态定义（Saga State Definition）
+
+* IDEL 
+
+  空闲状态：状态实例创建后的初始化状态
+
+* PARTIALLY_ACTIVE 
+
+  部分子事务激活状态：表示已经收到了事务开始事件  `TxStartedEvent`
+
+* PARTIALLY_COMMITTED 
+
+  部分子事务已提交状态：表示已经收到了事务结束事件 `TxEndedEvent`
+
+* FAILED 
+
+  失败状态：全局事务失败状态，当收到 `TxAbortedEvent` 或者 `SagaAbortedEvent` 事件满足进入此状态后将对所有已提交的子事务进行补偿，补偿全部成功后进入 `COMPENSATED` 状态，补偿失败后进入 `SUSPENDED` 状态
+
+* COMMITTED 
+
+  已提交状态：全局事务正常结束状态，所有子事物都已经提交
+
+* COMPENSATED 
+
+  已补偿状态：全局事务正常结束状态，所有已经提交的子事务补偿成功
+
+* SUSPENDED
+
+  事件挂起状态：全局事务异常结束状态，当出现不符合预期的事件状态组合（IDEL + SagaEndedEvent）或者Omega异常（java.net.ConnectException）时将进入挂起状态，设计挂起状态的目的是为了避免问题扩散，此时需要人工介入处理
 
 | <font size=1>State (Current/Next)</font> | <font size=1>IDEL</font>           | <font size=1>PARTIALLY_ACTIVE</font> | <font size=1>PARTIALLY_COMMITTED</font> | <font size=1>FAILED</font>         | <font size=1>COMPENSATED</font>    | <font size=1>COMMITTED</font>      | <font size=1>SUSPENDED</font>                       |
 | ---------------------------------------- | ---------------------------------- | ------------------------------------ | --------------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | --------------------------------------------------- |
@@ -38,6 +107,28 @@ The state machine consists of a Saga state machine (global transaction) and a Tx
 #### Tx 状态机（Tx State Machine）
 
 ![image-20190510094215976](assets/tx_state_diagram.png)
+
+##### Tx 状态定义（Tx State Definition）
+
+- IDEL
+
+  空闲状态：状态实例创建后的初始化状态
+
+- ACTIVE
+
+  激活状态：事务已经开始还未结束时的状态
+
+* FAILED
+
+  失败状态：子事务结束状态，事务失败
+
+* COMMITTED
+
+  已提交状态：子事务结束状态，事务已经提交
+
+* COMPENSATED
+
+  已补偿状态：子事务结束状态，事务已经补偿
 
 | <font size=1>State (Current/Next)</font> | <font size=1>IDEL</font>           | <font size=1>ACTIVE</font>         | <font size=1>FAILED</font>         | <font size=1>COMMITTED</font>      | <font size=1>COMPENSATED</font>    |
 | ---------------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- |

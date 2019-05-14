@@ -1,4 +1,5 @@
 @startuml
+scale 300 width
 hide empty description
 
 [*] --> IDEL : TXStartedEvent
