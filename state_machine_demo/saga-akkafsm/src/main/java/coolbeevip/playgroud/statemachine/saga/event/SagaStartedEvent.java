@@ -1,11 +1,16 @@
 package coolbeevip.playgroud.statemachine.saga.event;
 
 
+import coolbeevip.playgroud.statemachine.saga.event.base.SagaEvent;
 import lombok.Builder;
 import lombok.Getter;
 
-@Builder
+
 @Getter
-public class SagaStartedEvent {
-  private String globalTxId;
+public class SagaStartedEvent extends SagaEvent {
+
+  @Builder
+  public SagaStartedEvent(String globalTxId) {
+    super(globalTxId);
+  }
 }

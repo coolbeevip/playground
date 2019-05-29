@@ -5,10 +5,10 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Getter
-public class SagaEndedEvent extends SagaEvent {
+public class SagaAbortedEvent extends SagaEvent {
 
   @Builder
-  public SagaEndedEvent(String globalTxId) {
+  public SagaAbortedEvent(String globalTxId) {
     super(globalTxId);
   }
 }
