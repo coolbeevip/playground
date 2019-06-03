@@ -1,12 +1,10 @@
 package coolbeevip.playgroud.statemachine.saga.configuration;
 
 import akka.actor.ActorSystem;
-import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import coolbeevip.playgroud.statemachine.saga.integration.akka.SpringAkkaExtension;
-import java.util.concurrent.Executors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;

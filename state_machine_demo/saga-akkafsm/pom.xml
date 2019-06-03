@@ -21,6 +21,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <scala.version>2.12</scala.version>
     <akka.version>2.5.21</akka.version>
+    <leveldbjni-all.version>1.8</leveldbjni-all.version>
     <slf4j.version>1.7.21</slf4j.version>
     <logback.version>1.1.7</logback.version>
     <scalatest.version>3.2.0-SNAP10</scalatest.version>
@@ -42,6 +43,16 @@
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-actor_${scala.version}</artifactId>
       <version>${akka.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-persistence_${scala.version}</artifactId>
+      <version>${akka.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.fusesource.leveldbjni</groupId>
+      <artifactId>leveldbjni-all</artifactId>
+      <version>${leveldbjni-all.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

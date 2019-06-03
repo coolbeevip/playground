@@ -1,7 +1,7 @@
 package coolbeevip.playgroud.statemachine.saga.model;
 
 import akka.actor.ActorRef;
-import coolbeevip.playgroud.statemachine.saga.event.TxStartedEvent;
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.Builder;
@@ -12,35 +12,19 @@ import lombok.Setter;
 @Builder
 @Setter
 @Getter
-public class SagaData implements StateMachineData {
+public class SagaData implements StateMachineData, Serializable {
   @Default
   private long beginTime = System.currentTimeMillis();
   private long endTime;
   private String globalTxId;
   @Default
-  private Set<ActorRef> txSet = new HashSet<>();
+  private Set<ActorRef> txActors = new HashSet<>();
   @Default
   private Set<TxData> txData = new HashSet<>();
 
-  public void addTxStartedEvent(ActorRef tx){
-    if(!txSet.contains(tx)){
-      txSet.add(tx);
+  public void addTxActor(ActorRef tx){
+    if(!txActors.contains(tx)){
+      txActors.add(tx);
     }
-  }
-
-  public void addTxEndedEvent(ActorRef tx){
-    if(!txSet.contains(tx)){
-      txSet.add(tx);
-    }
-  }
-
-  public void addTxAbortedEvent(ActorRef tx){
-    if(!txSet.contains(tx)){
-      txSet.add(tx);
-    }
-  }
-
-  public Set<ActorRef> getTx() {
-    return txSet;
   }
 }

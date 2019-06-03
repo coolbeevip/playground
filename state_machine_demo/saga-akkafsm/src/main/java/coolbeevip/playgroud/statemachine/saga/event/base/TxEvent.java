@@ -1,6 +1,5 @@
 package coolbeevip.playgroud.statemachine.saga.event.base;
 
-import coolbeevip.playgroud.statemachine.saga.event.base.SagaEvent;
 import lombok.Getter;
 
 @Getter

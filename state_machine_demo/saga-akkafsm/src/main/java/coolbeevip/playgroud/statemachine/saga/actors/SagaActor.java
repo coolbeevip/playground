@@ -1,7 +1,12 @@
 package coolbeevip.playgroud.statemachine.saga.actors;
 
-import akka.actor.AbstractFSM;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.persistence.fsm.AbstractPersistentFSM;
 import coolbeevip.playgroud.statemachine.saga.event.SagaAbortedEvent;
+import coolbeevip.playgroud.statemachine.saga.event.SagaDomainEvent;
+import coolbeevip.playgroud.statemachine.saga.event.SagaDomainEvent.DomainEvent;
 import coolbeevip.playgroud.statemachine.saga.event.SagaEndedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.SagaStartedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.SagaTimeoutEvent;
@@ -9,183 +14,164 @@ import coolbeevip.playgroud.statemachine.saga.event.TxAbortedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxComponsitedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxEndedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxStartedEvent;
+import coolbeevip.playgroud.statemachine.saga.event.UpdateSagaDataEvent;
+import coolbeevip.playgroud.statemachine.saga.event.base.TxEvent;
 import coolbeevip.playgroud.statemachine.saga.model.SagaData;
-import coolbeevip.playgroud.statemachine.saga.model.StateMachineData;
-import coolbeevip.playgroud.statemachine.saga.model.Uninitialized;
+import coolbeevip.playgroud.statemachine.saga.model.TxData;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import scala.concurrent.duration.Duration;
 
 @Slf4j
 @Component
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class SagaActor extends AbstractFSM<SagaActorState, StateMachineData> {
+public class SagaActor extends
+    AbstractPersistentFSM<SagaActorState, SagaData, SagaDomainEvent.DomainEvent> {
+
+  public static Props props(String persistenceId) {
+    return Props.create(SagaActor.class, persistenceId);
+  }
+
+
+  @Autowired
+  private ActorSystem actorSystem;
 
   @Autowired
   SagaActorHolder sagaActorHolder;
 
-  {
-    startWith(SagaActorState.IDEL, Uninitialized.Uninitialized);
+  private final String persistenceId;
 
-    // IDEL + SagaStartedEvent = READY
+  public SagaActor(String persistenceId) {
+    this.persistenceId = persistenceId;
+
+    startWith(SagaActorState.IDEL, SagaData.builder().build());
+
     when(SagaActorState.IDEL,
-        matchEvent(SagaStartedEvent.class, Uninitialized.class,
-            (event, uninitialized) -> {
-              log.info("{} -> {}",SagaActorState.IDEL,SagaActorState.READY);
-              return goTo(SagaActorState.READY)
-                  .using(SagaData.builder().globalTxId(event.getGlobalTxId()).build());
-            }
-        )
-    );
-
-    // READY + TxStartedEvent = PARTIALLY_ACTIVE
-    when(SagaActorState.READY,
-        matchEvent(TxStartedEvent.class, StateMachineData.class,
+        matchEvent(SagaStartedEvent.class,
             (event, data) -> {
-              log.info("{} -> {}",SagaActorState.READY,SagaActorState.PARTIALLY_ACTIVE);
-              return goTo(SagaActorState.PARTIALLY_ACTIVE)
-                  .using(SagaData.builder().globalTxId(event.getGlobalTxId()).build());
+              data.setGlobalTxId(event.getGlobalTxId());
+              data.setBeginTime(System.currentTimeMillis());
+              return goTo(SagaActorState.READY).replying(data);
             }
-        )
-    );
-
-    // READY + SagaEndedEvent = SUSPENDED
-    when(SagaActorState.READY,
-        matchEvent(SagaEndedEvent.class, StateMachineData.class,
+        ).event(UpdateSagaDataEvent.class,
             (event, data) -> {
-              log.info("{} -> {}",SagaActorState.READY,SagaActorState.SUSPENDED);
-              return goTo(SagaActorState.SUSPENDED).using(data);
+              data.getTxData().add(event.getData());
+              return stay();
             }
         )
     );
 
-    // READY + SagaAbortedEvent = SUSPENDED
     when(SagaActorState.READY,
-        matchEvent(SagaAbortedEvent.class, StateMachineData.class,
+        matchEvent(TxStartedEvent.class, SagaData.class,
             (event, data) -> {
-              log.info("{} -> {}",SagaActorState.READY,SagaActorState.SUSPENDED);
-              return goTo(SagaActorState.SUSPENDED).using(data);
+              return goTo(SagaActorState.PARTIALLY_ACTIVE).andThen(exec( data1 -> {
+                log.info("***");
+                addTxActor(event, getSender(), data);
+              }));
+            }
+        ).event(SagaEndedEvent.class,
+            (event, data) -> {
+              return goTo(SagaActorState.SUSPENDED);
+            }
+        ).event(SagaAbortedEvent.class,
+            (event, data) -> {
+              return goTo(SagaActorState.SUSPENDED);
             }
         )
     );
 
-    // PARTIALLY_ACTIVE + TxEndedEvent = PARTIALLY_COMMITTED
     when(SagaActorState.PARTIALLY_ACTIVE,
         matchEvent(TxEndedEvent.class, SagaData.class,
             (event, data) -> {
-              log.info("{} -> {}",SagaActorState.PARTIALLY_ACTIVE,SagaActorState.PARTIALLY_COMMITTED);
-              return goTo(SagaActorState.PARTIALLY_COMMITTED).using(data);
+              //tellTxActor(event, getSender(), data);
+              return goTo(SagaActorState.PARTIALLY_COMMITTED);
             }
-        )
-    );
-
-    // PARTIALLY_ACTIVE + SagaTimeoutEvent = SUSPENDED
-    when(SagaActorState.PARTIALLY_ACTIVE,
-        matchEvent(SagaTimeoutEvent.class, SagaData.class,
+        ).event(SagaTimeoutEvent.class,
             (event, data) -> {
-              log.info("{} -> {}",SagaActorState.PARTIALLY_ACTIVE,SagaActorState.PARTIALLY_COMMITTED);
-              return goTo(SagaActorState.SUSPENDED).using(data);
+              return goTo(SagaActorState.SUSPENDED);
             }
-        )
-    );
-
-    // PARTIALLY_ACTIVE + TxAbortedEvent = FAILED
-    when(SagaActorState.PARTIALLY_ACTIVE,
-        matchEvent(TxAbortedEvent.class, SagaData.class,
+        ).event(TxAbortedEvent.class,
             (event, data) -> {
-              log.info("{} -> {}",SagaActorState.PARTIALLY_ACTIVE,SagaActorState.FAILED);
-              return goTo(SagaActorState.FAILED).using(data);
+              return goTo(SagaActorState.FAILED);
+            }
+        ).event(UpdateSagaDataEvent.class,
+            (event, data) -> {
+              data.getTxData().add(event.getData());
+              log.info("------");
+              return stay();
             }
         )
     );
 
-    // PARTIALLY_COMMITTED + TxStartedEvent = PARTIALLY_ACTIVE
     when(SagaActorState.PARTIALLY_COMMITTED,
-        matchEvent(TxStartedEvent.class, SagaData.class,
+        matchEvent(TxStartedEvent.class,
             (event, data) -> {
-              log.info("{} -> {}",SagaActorState.PARTIALLY_COMMITTED,SagaActorState.PARTIALLY_ACTIVE);
-              return goTo(SagaActorState.PARTIALLY_ACTIVE).using(data);
+              //addTxActor(event, getSender(), data);
+              return goTo(SagaActorState.PARTIALLY_ACTIVE);
+            }
+        ).event(SagaTimeoutEvent.class,
+            (event, data) -> {
+              return goTo(SagaActorState.SUSPENDED);
+            }
+        ).event(SagaEndedEvent.class,
+            (event, data) -> {
+              data.setEndTime(System.currentTimeMillis());
+              return goTo(SagaActorState.COMMITTED)
+                  .forMax(Duration.create(1, TimeUnit.MICROSECONDS)).replying(data);
+            }
+        ).event(TxAbortedEvent.class,
+            (event, data) -> {
+              return goTo(SagaActorState.FAILED);
+            }
+        ).event(UpdateSagaDataEvent.class,
+            (event, data) -> {
+              data.getTxData().add(event.getData());
+              return stay();
             }
         )
     );
 
-    // PARTIALLY_COMMITTED + SagaTimeoutEvent = SUSPENDED
-    when(SagaActorState.PARTIALLY_COMMITTED,
-        matchEvent(SagaTimeoutEvent.class, SagaData.class,
-            (event, data) -> {
-              log.info("{} -> {}",SagaActorState.PARTIALLY_COMMITTED,SagaActorState.SUSPENDED);
-              return goTo(SagaActorState.SUSPENDED).using(data);
-            }
-        )
-    );
-
-    // PARTIALLY_COMMITTED + SagaEndedEvent = COMMITTED
-    when(SagaActorState.PARTIALLY_COMMITTED,
-        matchEvent(SagaEndedEvent.class, SagaData.class,
-            (event, data) -> {
-              log.info("{} -> {}",SagaActorState.PARTIALLY_COMMITTED,SagaActorState.COMMITTED);
-              return goTo(SagaActorState.COMMITTED).using(data);
-            }
-        )
-    );
-
-    // PARTIALLY_COMMITTED + SagaEndedEvent = FAILED
-    when(SagaActorState.PARTIALLY_COMMITTED,
-        matchEvent(TxAbortedEvent.class, SagaData.class,
-            (event, data) -> {
-              log.info("{} -> {}",SagaActorState.PARTIALLY_COMMITTED,SagaActorState.FAILED);
-              return goTo(SagaActorState.FAILED).using(data);
-            }
-        )
-    );
-
-    // FAILED + SagaTimeoutEvent = SUSPENDED
     when(SagaActorState.FAILED,
         matchEvent(SagaTimeoutEvent.class, SagaData.class,
             (event, data) -> {
-              log.info("{} -> {}",SagaActorState.FAILED,SagaActorState.SUSPENDED);
-              return goTo(SagaActorState.SUSPENDED).using(data);
+              return goTo(SagaActorState.SUSPENDED);
             }
-        )
-    );
-
-    // FAILED + TxComponsitedEvent = FAILED or COMPENSATED
-    when(SagaActorState.FAILED,
-        matchEvent(TxComponsitedEvent.class, SagaData.class,
+        ).event(TxComponsitedEvent.class, SagaData.class,
             (event, data) -> {
-              log.info("{} -> {}",SagaActorState.FAILED,SagaActorState.FAILED);
-              return stay().using(data);
+              //log.info("{} -> {}",SagaActorState.FAILED,SagaActorState.FAILED);
+              //return stay().using(data);
               //当不存在committed的tx时，状态变为COMPENSATED
-              //return goTo(SagaActorState.COMPENSATED).using(data);
+              return goTo(SagaActorState.COMPENSATED);
             }
         )
     );
 
     when(SagaActorState.COMMITTED,
         matchAnyEvent(
-            (event, data) -> {
-              log.info("{} -> END",SagaActorState.COMMITTED);
-              return stay().using(data);
-            }
+            (event, data) -> stay()
         )
     );
 
     when(SagaActorState.SUSPENDED,
         matchAnyEvent(
-            (event, data) -> {
-              log.info("{} -> END",SagaActorState.SUSPENDED);
-              return stay().using(data);
-            }
+            (event, data) -> stop()
         )
     );
 
     when(SagaActorState.COMPENSATED,
         matchAnyEvent(
+            (event, data) -> stop()
+        )
+    );
+    when(null,
+        matchEvent(UpdateSagaDataEvent.class,
             (event, data) -> {
-              log.info("{} -> END",SagaActorState.COMPENSATED);
-              return stay().using(data);
+              data.getTxData().add(event.getData());
+              return stay();
             }
         )
     );
@@ -221,22 +207,48 @@ public class SagaActor extends AbstractFSM<SagaActorState, StateMachineData> {
 
     whenUnhandled(
         matchAnyEvent((event, data) -> {
-          log.error("unMatch Event {}",event);
+          log.error("unMatch Event {}", event);
           return stay();
         })
     );
 
     onTransition(
-        matchState(null,null, (from, to) -> {
-          StateMachineData data = stateData();
-          if(data instanceof SagaData){
-            String globalTxId = ((SagaData)data).getGlobalTxId();
-            sagaActorHolder.updateSagaCurrentState(globalTxId,to);
+        matchState(null, null, (from, to) -> {
+          log.info("transition {} {} -> {}", getSelf(), from, to);
+          SagaData data = stateData();
+          if (data instanceof SagaData) {
+            String globalTxId = ((SagaData) data).getGlobalTxId();
+            //sagaActorHolder.updateSagaCurrentState(globalTxId,to);
           }
         })
     );
+  }
 
-    initialize();
+  @Override
+  public Class domainEventClass() {
+    return SagaDomainEvent.DomainEvent.class;
+  }
+
+
+  @Override
+  public String persistenceId() {
+    return persistenceId;
+  }
+
+  @Override
+  public SagaData applyEvent(DomainEvent domainEvent, SagaData currentData) {
+    return currentData;
+  }
+
+  private void addTxActor(TxEvent event, ActorRef txActor, SagaData data) {
+    data.addTxActor(txActor);
+    txActor.tell(event, getSelf());
+    getSelf().tell(UpdateSagaDataEvent.builder().globalTxId(event.getGlobalTxId()).data(TxData.builder().build()).build(),txActor);
+
+  }
+
+  private void tellTxActor(TxEvent event, ActorRef txActor, SagaData data) {
+    txActor.tell(event, getSelf());
   }
 
 //  private void addTxStartedEvent(ActorRef tx, TxStartedEvent event, SagaData sagaData) {
