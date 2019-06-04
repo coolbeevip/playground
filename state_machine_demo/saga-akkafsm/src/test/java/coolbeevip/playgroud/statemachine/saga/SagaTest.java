@@ -61,23 +61,16 @@ public class SagaTest {
       watch(saga);
       saga.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
-      //saga begin
       saga.tell(SagaStartedEvent.builder().globalTxId(globalTxId).build(),getRef());
-
-      //tx1
       ActorRef tx_1 = system.actorOf(TxActor.props(genPersistenceId()),"tx1");
       saga.tell(TxStartedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_1).build(),tx_1);
       saga.tell(TxEndedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_1).build(),tx_1);
-
-
-      //tx2
       ActorRef tx_2 = system.actorOf(TxActor.props(genPersistenceId()),"tx2");
       saga.tell(TxStartedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_2).build(),tx_2);
       saga.tell(TxEndedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_2).build(),tx_2);
-
-      //saga end
       saga.tell(SagaEndedEvent.builder().globalTxId(globalTxId).build(),getRef());
 
+      //expect
       CurrentState currentState = expectMsgClass(PersistentFSM.CurrentState.class);
       assertEquals(SagaActorState.IDEL,currentState.state());
 
@@ -105,17 +98,12 @@ public class SagaTest {
       assertNotNull(sagaData.getEndTime());
       assertThat(sagaData.getEndTime(),greaterThan(sagaData.getBeginTime()));
 
-      //assertEquals(sagaData.getTxActors().size(),2);
-
-
       transition = expectMsgClass(PersistentFSM.Transition.class);
       assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_COMMITTED, SagaActorState.COMMITTED);
 
       Terminated terminated = expectMsgClass(Terminated.class);
       assertEquals(terminated.getActor(), saga);
-      expectNoMessage();
-      //Thread.sleep(36000);
-      log.info("txData length {}",sagaData.getTxData().size());
+
       system.stop(saga);
     }};
   }
