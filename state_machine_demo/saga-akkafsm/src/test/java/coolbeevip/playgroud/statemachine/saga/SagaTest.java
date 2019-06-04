@@ -57,7 +57,7 @@ public class SagaTest {
       final String localTxId_1 = UUID.randomUUID().toString();
       final String localTxId_2 = UUID.randomUUID().toString();
 
-      ActorRef saga = system.actorOf(SagaActor.props(genPersistenceId()));
+      ActorRef saga = system.actorOf(SagaActor.props(genPersistenceId()),"saga");
       watch(saga);
       saga.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
@@ -65,13 +65,13 @@ public class SagaTest {
       saga.tell(SagaStartedEvent.builder().globalTxId(globalTxId).build(),getRef());
 
       //tx1
-      ActorRef tx_1 = system.actorOf(TxActor.props(genPersistenceId()));
+      ActorRef tx_1 = system.actorOf(TxActor.props(genPersistenceId()),"tx1");
       saga.tell(TxStartedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_1).build(),tx_1);
       saga.tell(TxEndedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_1).build(),tx_1);
 
 
       //tx2
-      ActorRef tx_2 = system.actorOf(TxActor.props(genPersistenceId()));
+      ActorRef tx_2 = system.actorOf(TxActor.props(genPersistenceId()),"tx2");
       saga.tell(TxStartedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_2).build(),tx_2);
       saga.tell(TxEndedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_2).build(),tx_2);
 
@@ -111,10 +111,10 @@ public class SagaTest {
       transition = expectMsgClass(PersistentFSM.Transition.class);
       assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_COMMITTED, SagaActorState.COMMITTED);
 
-//      Terminated terminated = expectMsgClass(Terminated.class);
-//      assertEquals(terminated.getActor(), saga);
-
+      Terminated terminated = expectMsgClass(Terminated.class);
+      assertEquals(terminated.getActor(), saga);
       expectNoMessage();
+      //Thread.sleep(36000);
       log.info("txData length {}",sagaData.getTxData().size());
       system.stop(saga);
     }};

@@ -14,10 +14,8 @@ import coolbeevip.playgroud.statemachine.saga.event.TxAbortedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxComponsitedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxEndedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxStartedEvent;
-import coolbeevip.playgroud.statemachine.saga.event.UpdateSagaDataEvent;
 import coolbeevip.playgroud.statemachine.saga.event.base.TxEvent;
 import coolbeevip.playgroud.statemachine.saga.model.SagaData;
-import coolbeevip.playgroud.statemachine.saga.model.TxData;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,20 +55,14 @@ public class SagaActor extends
               data.setBeginTime(System.currentTimeMillis());
               return goTo(SagaActorState.READY).replying(data);
             }
-        ).event(UpdateSagaDataEvent.class,
-            (event, data) -> {
-              data.getTxData().add(event.getData());
-              return stay();
-            }
         )
     );
 
     when(SagaActorState.READY,
         matchEvent(TxStartedEvent.class, SagaData.class,
             (event, data) -> {
-              return goTo(SagaActorState.PARTIALLY_ACTIVE).andThen(exec( data1 -> {
-                log.info("***");
-                addTxActor(event, getSender(), data);
+              return goTo(SagaActorState.PARTIALLY_ACTIVE).andThen(exec(_data -> {
+                tellTxActor(event, getSender(), _data);
               }));
             }
         ).event(SagaEndedEvent.class,
@@ -87,8 +79,9 @@ public class SagaActor extends
     when(SagaActorState.PARTIALLY_ACTIVE,
         matchEvent(TxEndedEvent.class, SagaData.class,
             (event, data) -> {
-              //tellTxActor(event, getSender(), data);
-              return goTo(SagaActorState.PARTIALLY_COMMITTED);
+              return goTo(SagaActorState.PARTIALLY_COMMITTED).andThen(exec(_data -> {
+                tellTxActor(event, getSender(), _data);
+              }));
             }
         ).event(SagaTimeoutEvent.class,
             (event, data) -> {
@@ -96,13 +89,9 @@ public class SagaActor extends
             }
         ).event(TxAbortedEvent.class,
             (event, data) -> {
-              return goTo(SagaActorState.FAILED);
-            }
-        ).event(UpdateSagaDataEvent.class,
-            (event, data) -> {
-              data.getTxData().add(event.getData());
-              log.info("------");
-              return stay();
+              return goTo(SagaActorState.FAILED).andThen(exec(_data -> {
+                tellTxActor(event, getSender(), _data);
+              }));
             }
         )
     );
@@ -110,8 +99,9 @@ public class SagaActor extends
     when(SagaActorState.PARTIALLY_COMMITTED,
         matchEvent(TxStartedEvent.class,
             (event, data) -> {
-              //addTxActor(event, getSender(), data);
-              return goTo(SagaActorState.PARTIALLY_ACTIVE);
+              return goTo(SagaActorState.PARTIALLY_ACTIVE).andThen(exec(_data -> {
+                tellTxActor(event, getSender(), _data);
+              }));
             }
         ).event(SagaTimeoutEvent.class,
             (event, data) -> {
@@ -125,12 +115,9 @@ public class SagaActor extends
             }
         ).event(TxAbortedEvent.class,
             (event, data) -> {
-              return goTo(SagaActorState.FAILED);
-            }
-        ).event(UpdateSagaDataEvent.class,
-            (event, data) -> {
-              data.getTxData().add(event.getData());
-              return stay();
+              return goTo(SagaActorState.FAILED).andThen(exec(_data -> {
+                tellTxActor(event, getSender(), _data);
+              }));
             }
         )
     );
@@ -145,14 +132,16 @@ public class SagaActor extends
               //log.info("{} -> {}",SagaActorState.FAILED,SagaActorState.FAILED);
               //return stay().using(data);
               //当不存在committed的tx时，状态变为COMPENSATED
-              return goTo(SagaActorState.COMPENSATED);
+              return goTo(SagaActorState.COMPENSATED).andThen(exec(_data -> {
+                tellTxActor(event, getSender(), _data);
+              }));
             }
         )
     );
 
     when(SagaActorState.COMMITTED,
         matchAnyEvent(
-            (event, data) -> stay()
+            (event, data) -> stop()
         )
     );
 
@@ -167,47 +156,10 @@ public class SagaActor extends
             (event, data) -> stop()
         )
     );
-    when(null,
-        matchEvent(UpdateSagaDataEvent.class,
-            (event, data) -> {
-              data.getTxData().add(event.getData());
-              return stay();
-            }
-        )
-    );
-//    // PartiallyCommitted + SagaEndedEvent = Committed
-//    when(SagaActorState.PartiallyCommitted,
-//        matchEvent(SagaEndedEvent.class, SagaData.class,
-//            (event, data) -> {
-//              log.info("SE globalTxId={}",event.getGlobalTxId());
-//              data.setEndTime(System.currentTimeMillis());
-//              return goTo(SagaActorState.Committed).using(data);
-//            }
-//        )
-//    );
-//
-//    // PartiallyCommitted + TxStartedEvent = Active
-//    when(SagaActorState.PartiallyCommitted,
-//        matchEvent(TxStartedEvent.class, SagaData.class,
-//            (event, data) -> {
-//              log.info("TxStartedEvent");
-//              return goTo(SagaActorState.Active).using(data);
-//            }
-//        )
-//    );
-//
-//    // Committed
-//    when(
-//        SagaActorState.Committed,
-//        matchAnyEvent(
-//            (msg, data) -> {
-//              return goTo(SagaActorState.IDEL)
-//                  .using(data);
-//            }));
 
     whenUnhandled(
         matchAnyEvent((event, data) -> {
-          log.error("unMatch Event {}", event);
+          log.error("unmatch event {}", event);
           return stay();
         })
     );
@@ -216,10 +168,7 @@ public class SagaActor extends
         matchState(null, null, (from, to) -> {
           log.info("transition {} {} -> {}", getSelf(), from, to);
           SagaData data = stateData();
-          if (data instanceof SagaData) {
-            String globalTxId = ((SagaData) data).getGlobalTxId();
-            //sagaActorHolder.updateSagaCurrentState(globalTxId,to);
-          }
+          data.updateCurrentState(data.getGlobalTxId(),to);
         })
     );
   }
@@ -240,14 +189,10 @@ public class SagaActor extends
     return currentData;
   }
 
-  private void addTxActor(TxEvent event, ActorRef txActor, SagaData data) {
-    data.addTxActor(txActor);
-    txActor.tell(event, getSelf());
-    getSelf().tell(UpdateSagaDataEvent.builder().globalTxId(event.getGlobalTxId()).data(TxData.builder().build()).build(),txActor);
-
-  }
-
   private void tellTxActor(TxEvent event, ActorRef txActor, SagaData data) {
+    if(!data.getTxActors().contains(txActor)){
+      data.addTxActor(txActor);
+    }
     txActor.tell(event, getSelf());
   }
 

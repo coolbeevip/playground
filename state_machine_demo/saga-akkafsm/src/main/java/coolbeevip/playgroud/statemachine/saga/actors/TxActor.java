@@ -1,6 +1,5 @@
 package coolbeevip.playgroud.statemachine.saga.actors;
 
-import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.persistence.fsm.AbstractPersistentFSM;
 import coolbeevip.playgroud.statemachine.saga.event.SagaDomainEvent;
@@ -34,12 +33,10 @@ public class TxActor extends AbstractPersistentFSM<TxActorState, TxData, DomainE
     when(TxActorState.IDEL,
         matchEvent(TxStartedEvent.class,
             (event, data) -> {
-              log.info("++++");
               data.setGlobalTxId(event.getGlobalTxId());
               data.setParentTxId(event.getParentTxId());
               data.setBeginTime(System.currentTimeMillis());
-              getSender().tell(UpdateSagaDataEvent.builder().globalTxId(event.getGlobalTxId()).data(data).build(),getSelf());
-              return goTo(TxActorState.ACTIVE).replying(data);
+              return goTo(TxActorState.ACTIVE);
             }
         )
     );
@@ -48,14 +45,12 @@ public class TxActor extends AbstractPersistentFSM<TxActorState, TxData, DomainE
         matchEvent(TxEndedEvent.class,
             (event, data) -> {
               data.setEndTime(System.currentTimeMillis());
-              //getSender().tell(UpdateSagaDataEvent.builder().globalTxId(event.getGlobalTxId()).data(data).build(),getSelf());
-              return goTo(TxActorState.COMMITTED).replying(data);
+              return goTo(TxActorState.COMMITTED);
             }
         ).event(TxAbortedEvent.class, TxData.class,
             (event, data) -> {
               data.setEndTime(System.currentTimeMillis());
-              //getSender().tell(UpdateSagaDataEvent.builder().globalTxId(event.getGlobalTxId()).data(data).build(),getSelf());
-              return goTo(TxActorState.FAILED).replying(data);
+              return goTo(TxActorState.FAILED);
             }
         )
     );
@@ -64,15 +59,17 @@ public class TxActor extends AbstractPersistentFSM<TxActorState, TxData, DomainE
         matchEvent(TxComponsitedEvent.class,
             (event, data) -> {
               data.setEndTime(System.currentTimeMillis());
-              //getSender().tell(UpdateSagaDataEvent.builder().globalTxId(event.getGlobalTxId()).data(data).build(),getSelf());
-              return goTo(TxActorState.COMPENSATED).replying(data);
+              return goTo(TxActorState.COMPENSATED);
             }
+        ).anyEvent(
+            (event, data) -> stop()
         )
     );
 
+
     whenUnhandled(
         matchAnyEvent((event, data) -> {
-          log.error("unMatch Event {}", event);
+          log.error("unmatch event {}", event);
           return stay();
         })
     );
