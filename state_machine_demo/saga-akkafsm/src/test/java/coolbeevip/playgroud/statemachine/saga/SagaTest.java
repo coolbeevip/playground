@@ -18,6 +18,8 @@ import coolbeevip.playgroud.statemachine.saga.actors.TxActor;
 import coolbeevip.playgroud.statemachine.saga.actors.TxActorState;
 import coolbeevip.playgroud.statemachine.saga.event.SagaEndedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.SagaStartedEvent;
+import coolbeevip.playgroud.statemachine.saga.event.TxAbortedEvent;
+import coolbeevip.playgroud.statemachine.saga.event.TxComponsitedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxEndedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxStartedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.UpdateSagaDataEvent;
@@ -127,17 +129,8 @@ public class SagaTest {
       CurrentState currentState = expectMsgClass(PersistentFSM.CurrentState.class);
       assertEquals(TxActorState.IDEL,currentState.state());
 
-      TxData txData = expectMsgClass(TxData.class);
-      assertEquals(txData.getGlobalTxId(),globalTxId);
-
       PersistentFSM.Transition transition = expectMsgClass(PersistentFSM.Transition.class);
       assertTxTransition(transition, tx, TxActorState.IDEL, TxActorState.ACTIVE);
-
-      txData = expectMsgClass(TxData.class);
-      assertEquals(txData.getGlobalTxId(),globalTxId);
-      assertNotNull(txData.getBeginTime());
-      assertNotNull(txData.getEndTime());
-      assertThat(txData.getEndTime(),greaterThan(txData.getBeginTime()));
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
       assertTxTransition(transition, tx, TxActorState.ACTIVE, TxActorState.COMMITTED);
@@ -146,6 +139,66 @@ public class SagaTest {
     }};
   }
 
+  @Test
+  @SneakyThrows
+  public void txFailedScenarioTest(){
+    new TestKit(system) {{
+      final String globalTxId = UUID.randomUUID().toString();
+      final String localTxId = UUID.randomUUID().toString();
+
+      String persistenceId = UUID.randomUUID().toString();
+      ActorRef tx = system.actorOf(TxActor.props(persistenceId));
+
+      watch(tx);
+      tx.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
+
+      tx.tell(TxStartedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId).build(),getRef());
+      tx.tell(TxAbortedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId).build(),getRef());
+
+      CurrentState currentState = expectMsgClass(PersistentFSM.CurrentState.class);
+      assertEquals(TxActorState.IDEL,currentState.state());
+
+      PersistentFSM.Transition transition = expectMsgClass(PersistentFSM.Transition.class);
+      assertTxTransition(transition, tx, TxActorState.IDEL, TxActorState.ACTIVE);
+
+      transition = expectMsgClass(PersistentFSM.Transition.class);
+      assertTxTransition(transition, tx, TxActorState.ACTIVE, TxActorState.FAILED);
+
+      system.stop(tx);
+    }};
+  }
+
+  @Test
+  @SneakyThrows
+  public void txCompensatedScenarioTest(){
+    new TestKit(system) {{
+      final String globalTxId = UUID.randomUUID().toString();
+      final String localTxId = UUID.randomUUID().toString();
+
+      String persistenceId = UUID.randomUUID().toString();
+      ActorRef tx = system.actorOf(TxActor.props(persistenceId));
+
+      watch(tx);
+      tx.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
+
+      tx.tell(TxStartedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId).build(),getRef());
+      tx.tell(TxEndedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId).build(),getRef());
+      tx.tell(TxComponsitedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId).build(),getRef());
+
+      CurrentState currentState = expectMsgClass(PersistentFSM.CurrentState.class);
+      assertEquals(TxActorState.IDEL,currentState.state());
+
+      PersistentFSM.Transition transition = expectMsgClass(PersistentFSM.Transition.class);
+      assertTxTransition(transition, tx, TxActorState.IDEL, TxActorState.ACTIVE);
+
+      transition = expectMsgClass(PersistentFSM.Transition.class);
+      assertTxTransition(transition, tx, TxActorState.ACTIVE, TxActorState.COMMITTED);
+
+      transition = expectMsgClass(PersistentFSM.Transition.class);
+      assertTxTransition(transition, tx, TxActorState.COMMITTED, TxActorState.COMPENSATED);
+      system.stop(tx);
+    }};
+  }
 
   private static void assertSagaTransition(PersistentFSM.Transition transition, ActorRef actorRef, SagaActorState from, SagaActorState to) {
     assertEquals(transition.fsmRef(), actorRef);
