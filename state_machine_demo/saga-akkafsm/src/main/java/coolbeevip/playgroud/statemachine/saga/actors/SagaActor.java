@@ -111,7 +111,7 @@ public class SagaActor extends
             (event, data) -> {
               data.setEndTime(System.currentTimeMillis());
               return goTo(SagaActorState.COMMITTED)
-                  .forMax(Duration.create(1, TimeUnit.MICROSECONDS)).replying(data);
+                  .forMax(Duration.create(1, TimeUnit.MICROSECONDS));
             }
         ).event(TxAbortedEvent.class,
             (event, data) -> {
@@ -132,9 +132,11 @@ public class SagaActor extends
               //log.info("{} -> {}",SagaActorState.FAILED,SagaActorState.FAILED);
               //return stay().using(data);
               //当不存在committed的tx时，状态变为COMPENSATED
-              return goTo(SagaActorState.COMPENSATED).andThen(exec(_data -> {
-                tellTxActor(event, getSender(), _data);
-              }));
+              return goTo(SagaActorState.COMPENSATED)
+                  .forMax(Duration.create(1, TimeUnit.MICROSECONDS))
+                  .andThen(exec(_data -> {
+                    tellTxActor(event, getSender(), _data);
+                  }));
             }
         )
     );
@@ -168,7 +170,7 @@ public class SagaActor extends
         matchState(null, null, (from, to) -> {
           log.info("transition {} {} -> {}", getSelf(), from, to);
           SagaData data = stateData();
-          data.updateCurrentState(data.getGlobalTxId(),to);
+          data.updateCurrentState(data.getGlobalTxId(), to);
         })
     );
   }
@@ -190,7 +192,7 @@ public class SagaActor extends
   }
 
   private void tellTxActor(TxEvent event, ActorRef txActor, SagaData data) {
-    if(!data.getTxActors().contains(txActor)){
+    if (!data.getTxActors().contains(txActor)) {
       data.addTxActor(txActor);
     }
     txActor.tell(event, getSelf());
