@@ -105,7 +105,7 @@ public class SagaActor extends
             }
         ).event(SagaTimeoutEvent.class,
             (event, data) -> {
-              return goTo(SagaActorState.SUSPENDED);
+              return goTo(SagaActorState.SUSPENDED).forMax(Duration.create(1, TimeUnit.MICROSECONDS));
             }
         ).event(SagaEndedEvent.class,
             (event, data) -> {
@@ -125,7 +125,7 @@ public class SagaActor extends
     when(SagaActorState.FAILED,
         matchEvent(SagaTimeoutEvent.class, SagaData.class,
             (event, data) -> {
-              return goTo(SagaActorState.SUSPENDED);
+              return goTo(SagaActorState.SUSPENDED).forMax(Duration.create(1, TimeUnit.MICROSECONDS));
             }
         ).event(TxComponsitedEvent.class, SagaData.class,
             (event, data) -> {
