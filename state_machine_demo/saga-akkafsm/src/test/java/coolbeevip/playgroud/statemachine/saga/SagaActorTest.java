@@ -2,7 +2,6 @@ package coolbeevip.playgroud.statemachine.saga;
 
 import static org.junit.Assert.assertEquals;
 
-import akka.actor.ActorContext;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Terminated;
@@ -11,7 +10,6 @@ import akka.persistence.fsm.PersistentFSM.CurrentState;
 import akka.testkit.javadsl.TestKit;
 import coolbeevip.playgroud.statemachine.saga.actors.SagaActor;
 import coolbeevip.playgroud.statemachine.saga.actors.SagaActorState;
-import coolbeevip.playgroud.statemachine.saga.actors.TxActor;
 import coolbeevip.playgroud.statemachine.saga.event.SagaAbortedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.SagaEndedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.SagaStartedEvent;
@@ -119,7 +117,7 @@ public class SagaActorTest {
    * */
   @Test
   @SneakyThrows
-  public void sagaTxAbortedScenarioTest(){
+  public void sagaTxAbortedEventScenarioTest(){
     new TestKit(system) {{
       final String globalTxId = UUID.randomUUID().toString();
       final String localTxId_1 = UUID.randomUUID().toString();
@@ -171,9 +169,17 @@ public class SagaActorTest {
     }};
   }
 
+  /**
+   * SagaStartedEvent
+   * TxStartedEvent
+   * TxEndedEvent
+   * TxStartedEvent
+   * TxEndedEvent
+   * SagaTimeoutEvent
+   * */
   @Test
   @SneakyThrows
-  public void sagaTxEndedAndSagaTimeoutToSuspendedScenarioTest(){
+  public void sagaSagaTimeoutEventBeforeSagaEndedEventToSuspendedScenarioTest(){
     new TestKit(system) {{
       final String globalTxId = UUID.randomUUID().toString();
       final String localTxId_1 = UUID.randomUUID().toString();
@@ -225,9 +231,17 @@ public class SagaActorTest {
     }};
   }
 
+  /**
+   * SagaStartedEvent
+   * TxStartedEvent
+   * TxEndedEvent
+   * TxStartedEvent
+   * TxAbortedEvent
+   * SagaTimeoutEvent
+   * */
   @Test
   @SneakyThrows
-  public void sagaTxAbortedAndSagaTimeoutToSuspendedScenarioTest(){
+  public void sagaSagaTimeoutEventAfterTxAbortedEventToSuspendedScenarioTest(){
     new TestKit(system) {{
       final String globalTxId = UUID.randomUUID().toString();
       final String localTxId_1 = UUID.randomUUID().toString();
@@ -279,9 +293,15 @@ public class SagaActorTest {
     }};
   }
 
+  /**
+   * SagaStartedEvent
+   * TxStartedEvent
+   * TxEndedEvent
+   * SagaTimeoutEvent
+   * */
   @Test
   @SneakyThrows
-  public void sagaTxStartedAndSagaTimeoutToSuspendedScenarioTest(){
+  public void sagaSagaTimeoutEventAfterTxEndedEventToSuspendedScenarioTest(){
     new TestKit(system) {{
       final String globalTxId = UUID.randomUUID().toString();
       final String localTxId_1 = UUID.randomUUID().toString();
@@ -323,9 +343,17 @@ public class SagaActorTest {
     }};
   }
 
+  /**
+   * SagaStartedEvent
+   * TxStartedEvent
+   * TxEndedEvent
+   * TxStartedEvent
+   * TxEndedEvent
+   * SagaAbortedEvent
+   * */
   @Test
   @SneakyThrows
-  public void sagaAbortedScenarioTest(){
+  public void sagaSagaAbortedEventScenarioTest(){
     new TestKit(system) {{
       final String globalTxId = UUID.randomUUID().toString();
       final String localTxId_1 = UUID.randomUUID().toString();
