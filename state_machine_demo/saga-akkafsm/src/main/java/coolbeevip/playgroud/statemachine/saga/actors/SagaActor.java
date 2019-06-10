@@ -16,6 +16,7 @@ import coolbeevip.playgroud.statemachine.saga.event.TxEndedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxStartedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.base.TxEvent;
 import coolbeevip.playgroud.statemachine.saga.model.SagaData;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +63,7 @@ public class SagaActor extends
         matchEvent(TxStartedEvent.class, SagaData.class,
             (event, data) -> {
               return goTo(SagaActorState.PARTIALLY_ACTIVE).andThen(exec(_data -> {
-                tellTxActor(event, getSender(), _data);
+                createTxActor(event, _data);
               }));
             }
         ).event(SagaEndedEvent.class,
@@ -80,7 +81,7 @@ public class SagaActor extends
         matchEvent(TxEndedEvent.class, SagaData.class,
             (event, data) -> {
               return goTo(SagaActorState.PARTIALLY_COMMITTED).andThen(exec(_data -> {
-                tellTxActor(event, getSender(), _data);
+                tellTxActor(event, _data);
               }));
             }
         ).event(SagaTimeoutEvent.class,
@@ -90,7 +91,7 @@ public class SagaActor extends
         ).event(TxAbortedEvent.class,
             (event, data) -> {
               return goTo(SagaActorState.FAILED).andThen(exec(_data -> {
-                tellTxActor(event, getSender(), _data);
+                tellTxActor(event, _data);
               }));
             }
         )
@@ -100,7 +101,7 @@ public class SagaActor extends
         matchEvent(TxStartedEvent.class,
             (event, data) -> {
               return goTo(SagaActorState.PARTIALLY_ACTIVE).andThen(exec(_data -> {
-                tellTxActor(event, getSender(), _data);
+                createTxActor(event, _data);
               }));
             }
         ).event(SagaTimeoutEvent.class,
@@ -113,10 +114,14 @@ public class SagaActor extends
               return goTo(SagaActorState.COMMITTED)
                   .forMax(Duration.create(1, TimeUnit.MICROSECONDS));
             }
+        ).event(SagaAbortedEvent.class,
+            (event, data) -> {
+              return goTo(SagaActorState.SUSPENDED).forMax(Duration.create(1, TimeUnit.MICROSECONDS));
+            }
         ).event(TxAbortedEvent.class,
             (event, data) -> {
               return goTo(SagaActorState.FAILED).andThen(exec(_data -> {
-                tellTxActor(event, getSender(), _data);
+                tellTxActor(event, _data);
               }));
             }
         )
@@ -125,7 +130,8 @@ public class SagaActor extends
     when(SagaActorState.FAILED,
         matchEvent(SagaTimeoutEvent.class, SagaData.class,
             (event, data) -> {
-              return goTo(SagaActorState.SUSPENDED).forMax(Duration.create(1, TimeUnit.MICROSECONDS));
+              return goTo(SagaActorState.SUSPENDED)
+                  .forMax(Duration.create(1, TimeUnit.MICROSECONDS));
             }
         ).event(TxComponsitedEvent.class, SagaData.class,
             (event, data) -> {
@@ -135,7 +141,7 @@ public class SagaActor extends
               return goTo(SagaActorState.COMPENSATED)
                   .forMax(Duration.create(1, TimeUnit.MICROSECONDS))
                   .andThen(exec(_data -> {
-                    tellTxActor(event, getSender(), _data);
+                    tellTxActor(event, _data);
                   }));
             }
         )
@@ -191,11 +197,23 @@ public class SagaActor extends
     return currentData;
   }
 
-  private void tellTxActor(TxEvent event, ActorRef txActor, SagaData data) {
-    if (!data.getTxActors().contains(txActor)) {
-      data.addTxActor(txActor);
+  private void createTxActor(TxEvent event,SagaData data){
+    ActorRef txActor = context().actorOf(TxActor.props(genPersistenceId()),"tx_"+event.getLocalTxId());
+    data.getTxActors().put(event.getLocalTxId(),txActor);
+    txActor.tell(TxStartedEvent.builder().globalTxId(event.getGlobalTxId()).parentTxId(event.getGlobalTxId()).localTxId(event.getLocalTxId()).build(),getSelf());
+  }
+
+  private void tellTxActor(TxEvent event, SagaData data) throws RuntimeException {
+    if(data.getTxActors().containsKey(event.getLocalTxId())){
+      ActorRef txActor = data.getTxActors().get(event.getLocalTxId());
+      txActor.tell(event,getSelf());
+    }else{
+      throw new RuntimeException("TxActor["+event.getLocalTxId()+"] does not exist in SagaData");
     }
-    txActor.tell(event, getSelf());
+  }
+
+  public String genPersistenceId(){
+    return UUID.randomUUID().toString();
   }
 
 //  private void addTxStartedEvent(ActorRef tx, TxStartedEvent event, SagaData sagaData) {

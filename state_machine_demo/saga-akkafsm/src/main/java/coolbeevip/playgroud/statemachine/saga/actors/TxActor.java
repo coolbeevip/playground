@@ -8,6 +8,7 @@ import coolbeevip.playgroud.statemachine.saga.event.TxAbortedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxComponsitedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxEndedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxStartedEvent;
+import coolbeevip.playgroud.statemachine.saga.event.UpdateSagaDataEvent;
 import coolbeevip.playgroud.statemachine.saga.model.TxData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -44,6 +45,7 @@ public class TxActor extends AbstractPersistentFSM<TxActorState, TxData, DomainE
         matchEvent(TxEndedEvent.class,
             (event, data) -> {
               data.setEndTime(System.currentTimeMillis());
+              getSender().tell(UpdateSagaDataEvent.builder().data(data).build(),getSelf());
               return goTo(TxActorState.COMMITTED);
             }
         ).event(TxAbortedEvent.class, TxData.class,
@@ -87,6 +89,7 @@ public class TxActor extends AbstractPersistentFSM<TxActorState, TxData, DomainE
 
     onTransition(
         matchState(null, null, (from, to) -> {
+          TxData data = stateData();
           log.info("transition {} {} -> {}", getSelf(), from.name(), to.name());
         })
     );
