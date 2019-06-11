@@ -57,7 +57,7 @@ public class SagaActorTest {
    */
   @Test
   @SneakyThrows
-  public void sagaSuccessfulScenarioTest() {
+  public void successfulTest() {
     new TestKit(system) {{
       final String globalTxId = UUID.randomUUID().toString();
       final String localTxId_1 = UUID.randomUUID().toString();
@@ -131,7 +131,7 @@ public class SagaActorTest {
    */
   @Test
   @SneakyThrows
-  public void sagaTxAbortedEventScenarioTest() {
+  public void txAbortedEventTest() {
     new TestKit(system) {{
       final String globalTxId = UUID.randomUUID().toString();
       final String localTxId_1 = UUID.randomUUID().toString();
@@ -204,7 +204,7 @@ public class SagaActorTest {
    */
   @Test
   @SneakyThrows
-  public void sagaSagaTimeoutEventBeforeSagaEndedEventToSuspendedScenarioTest() {
+  public void sagaTimeoutEventAfterTxEndedEventToSuspendedTest() {
     new TestKit(system) {{
       final String globalTxId = UUID.randomUUID().toString();
       final String localTxId_1 = UUID.randomUUID().toString();
@@ -277,7 +277,7 @@ public class SagaActorTest {
    */
   @Test
   @SneakyThrows
-  public void sagaSagaTimeoutEventAfterTxAbortedEventToSuspendedScenarioTest() {
+  public void sagaTimeoutEventAfterTxAbortedEventToSuspendedTest() {
     new TestKit(system) {{
       final String globalTxId = UUID.randomUUID().toString();
       final String localTxId_1 = UUID.randomUUID().toString();
@@ -347,7 +347,7 @@ public class SagaActorTest {
    */
   @Test
   @SneakyThrows
-  public void sagaSagaTimeoutEventAfterTxEndedEventToSuspendedScenarioTest() {
+  public void sagaTimeoutEventAfterTxStartedEventToSuspendedTest() {
     new TestKit(system) {{
       final String globalTxId = UUID.randomUUID().toString();
       final String localTxId_1 = UUID.randomUUID().toString();
@@ -360,8 +360,8 @@ public class SagaActorTest {
 
       saga.tell(TxStartedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId)
           .localTxId(localTxId_1).build(), getRef());
-      saga.tell(TxEndedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId)
-          .localTxId(localTxId_1).build(), getRef());
+//      saga.tell(TxEndedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId)
+//          .localTxId(localTxId_1).build(), getRef());
 
       saga.tell(SagaTimeoutEvent.builder().globalTxId(globalTxId).build(), getRef());
 
@@ -375,17 +375,17 @@ public class SagaActorTest {
       transition = expectMsgClass(PersistentFSM.Transition.class);
       assertSagaTransition(transition, saga, SagaActorState.READY, SagaActorState.PARTIALLY_ACTIVE);
 
-      transition = expectMsgClass(PersistentFSM.Transition.class);
-      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_ACTIVE,
-          SagaActorState.PARTIALLY_COMMITTED);
+//      transition = expectMsgClass(PersistentFSM.Transition.class);
+//      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_ACTIVE,
+//          SagaActorState.PARTIALLY_COMMITTED);
 
       SagaData sagaData = expectMsgClass(SagaData.class);
       assertEquals(sagaData.getGlobalTxId(), globalTxId);
       assertEquals(sagaData.getTxEntityMap().size(), 1);
-      assertEquals(sagaData.getTxEntityMap().get(localTxId_1).getState(), TxState.COMMITTED);
+      assertEquals(sagaData.getTxEntityMap().get(localTxId_1).getState(), TxState.ACTIVE);
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
-      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_COMMITTED,
+      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_ACTIVE,
           SagaActorState.SUSPENDED);
 
       Terminated terminated = expectMsgClass(Terminated.class);

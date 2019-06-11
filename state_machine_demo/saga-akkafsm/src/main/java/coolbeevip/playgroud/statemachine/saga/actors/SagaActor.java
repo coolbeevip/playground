@@ -76,7 +76,9 @@ public class SagaActor extends
             }
         ).event(SagaTimeoutEvent.class,
             (event, data) -> {
-              return goTo(SagaActorState.SUSPENDED).replying(data);
+              return goTo(SagaActorState.SUSPENDED)
+                  .replying(data)
+                  .forMax(Duration.create(1, TimeUnit.MICROSECONDS));
             }
         ).event(TxAbortedEvent.class,
             (event, data) -> {
