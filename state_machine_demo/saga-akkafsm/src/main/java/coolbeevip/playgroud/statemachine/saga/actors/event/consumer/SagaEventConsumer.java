@@ -2,8 +2,6 @@ package coolbeevip.playgroud.statemachine.saga.actors.event.consumer;
 
 import akka.actor.ActorRef;
 import com.google.common.eventbus.Subscribe;
-import coolbeevip.playgroud.statemachine.saga.actors.event.SagaStartedEvent;
-import coolbeevip.playgroud.statemachine.saga.actors.event.TxStartedEvent;
 import coolbeevip.playgroud.statemachine.saga.actors.event.base.BaseEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

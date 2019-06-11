@@ -1,6 +1,5 @@
 package coolbeevip.playgroud.statemachine.saga.actors.model;
 
-import coolbeevip.playgroud.statemachine.saga.actors.event.SagaDomainEvent;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
