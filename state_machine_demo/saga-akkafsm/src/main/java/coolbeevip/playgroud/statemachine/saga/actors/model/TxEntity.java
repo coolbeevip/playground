@@ -1,4 +1,4 @@
-package coolbeevip.playgroud.statemachine.saga.model;
+package coolbeevip.playgroud.statemachine.saga.actors.model;
 
 import coolbeevip.playgroud.statemachine.saga.actors.TxState;
 import java.io.Serializable;

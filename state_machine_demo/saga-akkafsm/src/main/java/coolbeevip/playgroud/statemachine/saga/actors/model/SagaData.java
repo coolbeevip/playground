@@ -1,14 +1,9 @@
-package coolbeevip.playgroud.statemachine.saga.model;
+package coolbeevip.playgroud.statemachine.saga.actors.model;
 
-import akka.actor.ActorRef;
-import akka.persistence.fsm.PersistentFSM;
-import coolbeevip.playgroud.statemachine.saga.actors.SagaActorState;
-import coolbeevip.playgroud.statemachine.saga.event.SagaDomainEvent;
+import coolbeevip.playgroud.statemachine.saga.actors.event.SagaDomainEvent;
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;

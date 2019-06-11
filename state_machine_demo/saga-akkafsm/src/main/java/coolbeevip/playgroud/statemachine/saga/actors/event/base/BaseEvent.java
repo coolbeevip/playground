@@ -1,4 +1,4 @@
-package coolbeevip.playgroud.statemachine.saga.event.base;
+package coolbeevip.playgroud.statemachine.saga.actors.event.base;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

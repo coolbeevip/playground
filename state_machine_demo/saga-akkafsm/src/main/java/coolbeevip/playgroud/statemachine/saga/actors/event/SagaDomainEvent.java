@@ -1,4 +1,4 @@
-package coolbeevip.playgroud.statemachine.saga.event;
+package coolbeevip.playgroud.statemachine.saga.actors.event;
 
 public class SagaDomainEvent {
   public interface DomainEvent {}

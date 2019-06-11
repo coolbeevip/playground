@@ -1,26 +1,17 @@
 package coolbeevip.playgroud.statemachine.saga;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.persistence.fsm.PersistentFSM.CurrentState;
-import akka.testkit.javadsl.TestKit;
 import com.google.common.eventbus.EventBus;
-import coolbeevip.playgroud.statemachine.saga.actors.SagaActorState;
-import coolbeevip.playgroud.statemachine.saga.event.SagaEndedEvent;
-import coolbeevip.playgroud.statemachine.saga.event.SagaStartedEvent;
-import coolbeevip.playgroud.statemachine.saga.event.TxAbortedEvent;
-import coolbeevip.playgroud.statemachine.saga.event.TxComponsitedEvent;
-import coolbeevip.playgroud.statemachine.saga.event.TxEndedEvent;
-import coolbeevip.playgroud.statemachine.saga.event.TxStartedEvent;
-import coolbeevip.playgroud.statemachine.saga.event.base.SagaEvent;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import coolbeevip.playgroud.statemachine.saga.actors.event.SagaEndedEvent;
+import coolbeevip.playgroud.statemachine.saga.actors.event.SagaStartedEvent;
+import coolbeevip.playgroud.statemachine.saga.actors.event.TxAbortedEvent;
+import coolbeevip.playgroud.statemachine.saga.actors.event.TxComponsitedEvent;
+import coolbeevip.playgroud.statemachine.saga.actors.event.TxEndedEvent;
+import coolbeevip.playgroud.statemachine.saga.actors.event.TxStartedEvent;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
