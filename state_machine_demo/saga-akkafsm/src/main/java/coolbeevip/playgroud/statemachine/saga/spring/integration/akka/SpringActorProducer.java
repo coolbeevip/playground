@@ -1,4 +1,4 @@
-package coolbeevip.playgroud.statemachine.saga.integration.akka;
+package coolbeevip.playgroud.statemachine.saga.spring.integration.akka;
 
 import akka.actor.Actor;
 import akka.actor.IndirectActorProducer;

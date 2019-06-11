@@ -1,4 +1,4 @@
-package coolbeevip.playgroud.statemachine.saga.spring;
+package coolbeevip.playgroud.statemachine.saga.spring.integration.eventbus;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;

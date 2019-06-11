@@ -4,7 +4,7 @@ import akka.actor.ActorSystem;
 import com.google.common.eventbus.EventBus;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import coolbeevip.playgroud.statemachine.saga.integration.akka.SpringAkkaExtension;
+import coolbeevip.playgroud.statemachine.saga.spring.integration.akka.SpringAkkaExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
