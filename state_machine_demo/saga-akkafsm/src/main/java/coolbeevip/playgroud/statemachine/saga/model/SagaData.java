@@ -17,7 +17,7 @@ import lombok.Setter;
 @Builder
 @Setter
 @Getter
-public class SagaData implements StateMachineData, Serializable {
+public class SagaData implements Serializable {
   @Default
   private long beginTime = System.currentTimeMillis();
   private long endTime;

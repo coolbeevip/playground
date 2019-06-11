@@ -8,7 +8,6 @@ import akka.actor.ActorSystem;
 import akka.persistence.fsm.PersistentFSM.CurrentState;
 import akka.testkit.javadsl.TestKit;
 import com.google.common.eventbus.EventBus;
-import coolbeevip.playgroud.statemachine.saga.actors.SagaActorHolder;
 import coolbeevip.playgroud.statemachine.saga.actors.SagaActorState;
 import coolbeevip.playgroud.statemachine.saga.event.SagaEndedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.SagaStartedEvent;
@@ -40,8 +39,6 @@ public class SagaApplicationTest {
   @Autowired
   private ActorSystem actorSystem;
 
-  @Autowired
-  SagaActorHolder sagaActorHolder;
 
   private ActorRef testActorRef;
 

@@ -19,7 +19,6 @@ import coolbeevip.playgroud.statemachine.saga.model.SagaData;
 import coolbeevip.playgroud.statemachine.saga.model.TxEntity;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -34,9 +33,6 @@ public class SagaActor extends
   public static Props props(String persistenceId) {
     return Props.create(SagaActor.class, persistenceId);
   }
-
-  @Autowired
-  SagaActorHolder sagaActorHolder;
 
   private final String persistenceId;
 
@@ -208,34 +204,34 @@ public class SagaActor extends
           TxEntity txEntity = TxEntity.builder()
               .localTxId(txEvent.getLocalTxId())
               .parentTxId(txEvent.getParentTxId())
-              .state(TxActorState.ACTIVE)
+              .state(TxState.ACTIVE)
               .build();
           data.getTxEntityMap().put(txEntity.getLocalTxId(), txEntity);
         }
       } else {
         TxEntity txEntity = data.getTxEntityMap().get(txEvent.getLocalTxId());
         if (event instanceof TxEndedEvent) {
-          if (txEntity.getState() == TxActorState.ACTIVE) {
+          if (txEntity.getState() == TxState.ACTIVE) {
             txEntity.setEndTime(System.currentTimeMillis());
-            txEntity.setState(TxActorState.COMMITTED);
+            txEntity.setState(TxState.COMMITTED);
           }
         } else if (event instanceof TxAbortedEvent) {
-          if (txEntity.getState() == TxActorState.ACTIVE) {
+          if (txEntity.getState() == TxState.ACTIVE) {
             txEntity.setEndTime(System.currentTimeMillis());
-            txEntity.setState(TxActorState.FAILED);
+            txEntity.setState(TxState.FAILED);
             // TODO 调用补偿方法
             compensation(txEntity);
           }
         } else if (event instanceof TxComponsitedEvent) {
-          txEntity.setState(TxActorState.COMPENSATED);
-          //data.getTxEntityMap().get(((TxComponsitedEvent) event).getLocalTxId()).setState(TxActorState.COMPENSATED);
+          txEntity.setState(TxState.COMPENSATED);
+          //data.getTxEntityMap().get(((TxComponsitedEvent) event).getLocalTxId()).setState(TxState.COMPENSATED);
         }
         //data.getTxEntityMap().put(txEvent.getLocalTxId(), txEntity);
       }
     }else if(event instanceof SagaEvent){
       if(event instanceof SagaAbortedEvent){
         data.getTxEntityMap().forEach((k, v) -> {
-          if (v.getState() == TxActorState.COMMITTED) {
+          if (v.getState() == TxState.COMMITTED) {
             // TODO 调用补偿方法
             compensation(v);
           }
@@ -246,7 +242,7 @@ public class SagaActor extends
 
   private boolean hasCommittedTx(SagaData data){
     return data.getTxEntityMap().entrySet().stream()
-        .filter(map -> map.getValue().getState() == TxActorState.COMMITTED)
+        .filter(map -> map.getValue().getState() == TxState.COMMITTED)
         .count() > 0;
   }
 

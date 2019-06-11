@@ -1,6 +1,6 @@
 package coolbeevip.playgroud.statemachine.saga.actors;
 
-public enum TxActorState {
+public enum TxState {
   ACTIVE,
   FAILED,
   COMMITTED,

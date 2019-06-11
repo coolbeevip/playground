@@ -10,7 +10,7 @@ import akka.persistence.fsm.PersistentFSM.CurrentState;
 import akka.testkit.javadsl.TestKit;
 import coolbeevip.playgroud.statemachine.saga.actors.SagaActor;
 import coolbeevip.playgroud.statemachine.saga.actors.SagaActorState;
-import coolbeevip.playgroud.statemachine.saga.actors.TxActorState;
+import coolbeevip.playgroud.statemachine.saga.actors.TxState;
 import coolbeevip.playgroud.statemachine.saga.event.SagaAbortedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.SagaEndedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.SagaStartedEvent;
@@ -107,7 +107,7 @@ public class SagaActorTest {
       assertEquals(sagaData.getGlobalTxId(), globalTxId);
       assertEquals(sagaData.getTxEntityMap().size(), 2);
       sagaData.getTxEntityMap().forEach((k, v) -> {
-        assertEquals(v.getState(), TxActorState.COMMITTED);
+        assertEquals(v.getState(), TxState.COMMITTED);
       });
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
@@ -181,8 +181,8 @@ public class SagaActorTest {
       SagaData sagaData = expectMsgClass(SagaData.class);
       assertEquals(sagaData.getGlobalTxId(), globalTxId);
       assertEquals(sagaData.getTxEntityMap().size(), 2);
-      assertEquals(sagaData.getTxEntityMap().get(localTxId_1).getState(),TxActorState.COMPENSATED);
-      assertEquals(sagaData.getTxEntityMap().get(localTxId_2).getState(),TxActorState.FAILED);
+      assertEquals(sagaData.getTxEntityMap().get(localTxId_1).getState(), TxState.COMPENSATED);
+      assertEquals(sagaData.getTxEntityMap().get(localTxId_2).getState(), TxState.FAILED);
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
       assertSagaTransition(transition, saga, SagaActorState.FAILED, SagaActorState.COMPENSATED);
@@ -253,8 +253,8 @@ public class SagaActorTest {
       SagaData sagaData = expectMsgClass(SagaData.class);
       assertEquals(sagaData.getGlobalTxId(), globalTxId);
       assertEquals(sagaData.getTxEntityMap().size(), 2);
-      assertEquals(sagaData.getTxEntityMap().get(localTxId_1).getState(),TxActorState.COMMITTED);
-      assertEquals(sagaData.getTxEntityMap().get(localTxId_2).getState(),TxActorState.COMMITTED);
+      assertEquals(sagaData.getTxEntityMap().get(localTxId_1).getState(), TxState.COMMITTED);
+      assertEquals(sagaData.getTxEntityMap().get(localTxId_2).getState(), TxState.COMMITTED);
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
       assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_COMMITTED,
@@ -326,8 +326,8 @@ public class SagaActorTest {
       SagaData sagaData = expectMsgClass(SagaData.class);
       assertEquals(sagaData.getGlobalTxId(), globalTxId);
       assertEquals(sagaData.getTxEntityMap().size(), 2);
-      assertEquals(sagaData.getTxEntityMap().get(localTxId_1).getState(),TxActorState.COMMITTED);
-      assertEquals(sagaData.getTxEntityMap().get(localTxId_2).getState(),TxActorState.FAILED);
+      assertEquals(sagaData.getTxEntityMap().get(localTxId_1).getState(), TxState.COMMITTED);
+      assertEquals(sagaData.getTxEntityMap().get(localTxId_2).getState(), TxState.FAILED);
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
       assertSagaTransition(transition, saga, SagaActorState.FAILED, SagaActorState.SUSPENDED);
@@ -382,7 +382,7 @@ public class SagaActorTest {
       SagaData sagaData = expectMsgClass(SagaData.class);
       assertEquals(sagaData.getGlobalTxId(), globalTxId);
       assertEquals(sagaData.getTxEntityMap().size(), 1);
-      assertEquals(sagaData.getTxEntityMap().get(localTxId_1).getState(),TxActorState.COMMITTED);
+      assertEquals(sagaData.getTxEntityMap().get(localTxId_1).getState(), TxState.COMMITTED);
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
       assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_COMMITTED,
@@ -465,8 +465,8 @@ public class SagaActorTest {
       SagaData sagaData = expectMsgClass(SagaData.class);
       assertEquals(sagaData.getGlobalTxId(), globalTxId);
       assertEquals(sagaData.getTxEntityMap().size(), 2);
-      assertEquals(sagaData.getTxEntityMap().get(localTxId_1).getState(),TxActorState.COMPENSATED);
-      assertEquals(sagaData.getTxEntityMap().get(localTxId_2).getState(),TxActorState.COMPENSATED);
+      assertEquals(sagaData.getTxEntityMap().get(localTxId_1).getState(), TxState.COMPENSATED);
+      assertEquals(sagaData.getTxEntityMap().get(localTxId_2).getState(), TxState.COMPENSATED);
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
       assertSagaTransition(transition, saga, SagaActorState.FAILED,
