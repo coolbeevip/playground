@@ -1,5 +1,6 @@
 package coolbeevip.playgroud.statemachine.saga.model;
 
+import coolbeevip.playgroud.statemachine.saga.actors.TxActorState;
 import java.io.Serializable;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -9,11 +10,11 @@ import lombok.Setter;
 @Builder
 @Setter
 @Getter
-public class TxData implements StateMachineData, Serializable {
+public class TxEntity implements Serializable {
   @Default
   private long beginTime = System.currentTimeMillis();
   private long endTime;
   private String parentTxId;
   private String localTxId;
-  private String globalTxId;
+  private TxActorState state;
 }

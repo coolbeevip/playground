@@ -3,7 +3,7 @@ package coolbeevip.playgroud.statemachine.saga.event.base;
 import lombok.Getter;
 
 @Getter
-public class TxEvent extends SagaEvent {
+public class TxEvent extends BaseEvent {
   private String parentTxId;
   private String localTxId;
 

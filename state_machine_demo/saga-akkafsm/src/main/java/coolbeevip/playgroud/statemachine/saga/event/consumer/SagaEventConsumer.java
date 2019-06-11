@@ -5,6 +5,7 @@ import com.google.common.eventbus.Subscribe;
 import coolbeevip.playgroud.statemachine.saga.actors.SagaActorHolder;
 import coolbeevip.playgroud.statemachine.saga.event.SagaStartedEvent;
 import coolbeevip.playgroud.statemachine.saga.event.TxStartedEvent;
+import coolbeevip.playgroud.statemachine.saga.event.base.BaseEvent;
 import coolbeevip.playgroud.statemachine.saga.event.base.SagaEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,7 @@ public class SagaEventConsumer {
   private SagaActorHolder sagaActorHolder;
 
   @Subscribe
-  public void subscribeSagaEvent(SagaEvent event) {
+  public void subscribeSagaEvent(BaseEvent event) {
     log.info("receive {} {}",event.getClass().getSimpleName(),event.getGlobalTxId());
     final ActorRef sagaActor;
     if(event instanceof SagaStartedEvent){

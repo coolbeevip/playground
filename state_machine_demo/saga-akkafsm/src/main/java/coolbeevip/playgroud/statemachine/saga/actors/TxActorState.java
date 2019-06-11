@@ -1,16 +1,8 @@
 package coolbeevip.playgroud.statemachine.saga.actors;
 
-import akka.persistence.fsm.PersistentFSM;
-
-public enum TxActorState implements PersistentFSM.FSMState {
-  IDEL,
+public enum TxActorState {
   ACTIVE,
   FAILED,
   COMMITTED,
   COMPENSATED;
-
-  @Override
-  public String identifier() {
-    return name();
-  }
 }
