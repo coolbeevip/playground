@@ -50,7 +50,7 @@ public class SagaActor extends
               if (event.getTimeout() > 0) {
                 data.setExpirationTime(data.getBeginTime() + event.getTimeout() * 1000);
                 return goTo(SagaActorState.READY)
-                    .forMax(Duration.create(data.getTimeout(),TimeUnit.MILLISECONDS));
+                    .forMax(Duration.create(data.getTimeout(), TimeUnit.MILLISECONDS));
               } else {
                 return goTo(SagaActorState.READY);
               }
@@ -65,7 +65,7 @@ public class SagaActor extends
               updateTxEntity(event, data);
               if (data.getExpirationTime() > 0) {
                 return goTo(SagaActorState.PARTIALLY_ACTIVE)
-                    .forMax(Duration.create(data.getTimeout(),TimeUnit.MILLISECONDS));
+                    .forMax(Duration.create(data.getTimeout(), TimeUnit.MILLISECONDS));
               } else {
                 return goTo(SagaActorState.PARTIALLY_ACTIVE);
               }
@@ -91,8 +91,8 @@ public class SagaActor extends
               updateTxEntity(event, data);
               if (data.getExpirationTime() > 0) {
                 return goTo(SagaActorState.PARTIALLY_COMMITTED)
-                    .forMax(Duration.create(data.getTimeout(),TimeUnit.MILLISECONDS));
-              }else{
+                    .forMax(Duration.create(data.getTimeout(), TimeUnit.MILLISECONDS));
+              } else {
                 return goTo(SagaActorState.PARTIALLY_COMMITTED);
               }
             }
@@ -119,8 +119,8 @@ public class SagaActor extends
               updateTxEntity(event, data);
               if (data.getExpirationTime() > 0) {
                 return goTo(SagaActorState.PARTIALLY_ACTIVE)
-                    .forMax(Duration.create(data.getTimeout(),TimeUnit.MILLISECONDS));
-              }else{
+                    .forMax(Duration.create(data.getTimeout(), TimeUnit.MILLISECONDS));
+              } else {
                 return goTo(SagaActorState.PARTIALLY_ACTIVE);
               }
             }
@@ -166,13 +166,21 @@ public class SagaActor extends
             (event, data) -> {
               data.setEndTime(System.currentTimeMillis());
               updateTxEntity(event, data);
-              if (hasCommittedTx(data)) {
+              if ((!data.isTerminated() && data.getCompensationRunningCounter().intValue() > 0)
+                  || hasCommittedTx(data)) {
                 return stay();
               } else {
                 return goTo(SagaActorState.COMPENSATED)
                     .replying(data)
                     .forMax(Duration.create(1, TimeUnit.MILLISECONDS));
               }
+            }
+        ).event(SagaAbortedEvent.class, SagaData.class,
+            (event, data) -> {
+              data.setEndTime(System.currentTimeMillis());
+              updateTxEntity(event, data);
+              data.setTerminated(true);
+              return stay();
             }
         ).event(Arrays.asList(StateTimeout()), SagaData.class,
             (event, data) -> {
@@ -257,21 +265,26 @@ public class SagaActor extends
           if (txEntity.getState() == TxState.ACTIVE) {
             txEntity.setEndTime(System.currentTimeMillis());
             txEntity.setState(TxState.FAILED);
-            // TODO 调用补偿方法
-            compensation(txEntity);
+            data.getTxEntityMap().forEach((k, v) -> {
+              if (v.getState() == TxState.COMMITTED) {
+                // TODO 调用补偿方法
+                compensation(v, data);
+              }
+            });
           }
         } else if (event instanceof TxComponsitedEvent) {
+          //补偿中计数器减一
+          data.getCompensationRunningCounter().decrementAndGet();
           txEntity.setState(TxState.COMPENSATED);
-          //data.getTxEntityMap().get(((TxComponsitedEvent) event).getLocalTxId()).setState(TxState.COMPENSATED);
+          log.info("完成补偿 {}",txEntity.getLocalTxId());
         }
-        //data.getTxEntityMap().put(txEvent.getLocalTxId(), txEntity);
       }
     } else if (event instanceof SagaEvent) {
       if (event instanceof SagaAbortedEvent) {
         data.getTxEntityMap().forEach((k, v) -> {
           if (v.getState() == TxState.COMMITTED) {
             // TODO 调用补偿方法
-            compensation(v);
+            compensation(v, data);
           }
         });
       }
@@ -284,7 +297,9 @@ public class SagaActor extends
         .count() > 0;
   }
 
-  private void compensation(TxEntity txEntity) {
+  private void compensation(TxEntity txEntity, SagaData data) {
+    //补偿中计数器加一
+    data.getCompensationRunningCounter().incrementAndGet();
     log.info("调用补偿方法 {}", txEntity.getLocalTxId());
   }
 }
