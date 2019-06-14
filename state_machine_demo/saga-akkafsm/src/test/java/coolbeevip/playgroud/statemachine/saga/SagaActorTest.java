@@ -85,16 +85,13 @@ public class SagaActorTest {
       assertSagaTransition(transition, saga, SagaActorState.READY, SagaActorState.PARTIALLY_ACTIVE);
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
-      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_ACTIVE,
-          SagaActorState.PARTIALLY_COMMITTED);
+      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_ACTIVE, SagaActorState.PARTIALLY_COMMITTED);
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
-      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_COMMITTED,
-          SagaActorState.PARTIALLY_ACTIVE);
+      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_COMMITTED, SagaActorState.PARTIALLY_ACTIVE);
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
-      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_ACTIVE,
-          SagaActorState.PARTIALLY_COMMITTED);
+      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_ACTIVE, SagaActorState.PARTIALLY_COMMITTED);
 
       SagaData sagaData = expectMsgClass(SagaData.class);
       assertEquals(sagaData.getGlobalTxId(), globalTxId);
@@ -104,8 +101,7 @@ public class SagaActorTest {
       });
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
-      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_COMMITTED,
-          SagaActorState.COMMITTED);
+      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_COMMITTED, SagaActorState.COMMITTED);
 
       Terminated terminated = expectMsgClass(Terminated.class);
       assertEquals(terminated.getActor(), saga);
@@ -135,19 +131,11 @@ public class SagaActorTest {
       saga.tell(new PersistentFSM.SubscribeTransitionCallBack(getRef()), getRef());
 
       saga.tell(SagaStartedEvent.builder().globalTxId(globalTxId).build(), getRef());
-
-      saga.tell(TxStartedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId)
-          .localTxId(localTxId_1).build(), getRef());
-      saga.tell(TxEndedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId)
-          .localTxId(localTxId_1).build(), getRef());
-
-      saga.tell(TxStartedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId)
-          .localTxId(localTxId_2).build(), getRef());
-      saga.tell(TxAbortedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId)
-          .localTxId(localTxId_2).build(), getRef());
-
-      saga.tell(TxComponsitedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId)
-          .localTxId(localTxId_1).build(), getRef());
+      saga.tell(TxStartedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_1).build(), getRef());
+      saga.tell(TxEndedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_1).build(), getRef());
+      saga.tell(TxStartedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_2).build(), getRef());
+      saga.tell(TxAbortedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_2).build(), getRef());
+      saga.tell(TxComponsitedEvent.builder().globalTxId(globalTxId).parentTxId(globalTxId).localTxId(localTxId_1).build(), getRef());
 
       //expect
       CurrentState currentState = expectMsgClass(PersistentFSM.CurrentState.class);
@@ -160,16 +148,13 @@ public class SagaActorTest {
       assertSagaTransition(transition, saga, SagaActorState.READY, SagaActorState.PARTIALLY_ACTIVE);
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
-      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_ACTIVE,
-          SagaActorState.PARTIALLY_COMMITTED);
+      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_ACTIVE, SagaActorState.PARTIALLY_COMMITTED);
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
-      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_COMMITTED,
-          SagaActorState.PARTIALLY_ACTIVE);
+      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_COMMITTED, SagaActorState.PARTIALLY_ACTIVE);
 
       transition = expectMsgClass(PersistentFSM.Transition.class);
-      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_ACTIVE,
-          SagaActorState.FAILED);
+      assertSagaTransition(transition, saga, SagaActorState.PARTIALLY_ACTIVE, SagaActorState.FAILED);
 
       SagaData sagaData = expectMsgClass(SagaData.class);
       assertEquals(sagaData.getGlobalTxId(), globalTxId);
