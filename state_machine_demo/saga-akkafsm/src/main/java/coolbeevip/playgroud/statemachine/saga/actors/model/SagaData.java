@@ -16,6 +16,11 @@ public class SagaData implements Serializable {
   private long beginTime = System.currentTimeMillis();
   private long endTime;
   private String globalTxId;
+  private long expirationTime;
   @Default
   private Map<String,TxEntity> txEntityMap = new HashMap<>();
+
+  public long getTimeout(){
+    return expirationTime-System.currentTimeMillis();
+  }
 }

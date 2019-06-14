@@ -8,9 +8,10 @@ import lombok.Getter;
 
 @Getter
 public class SagaStartedEvent extends SagaEvent {
-
+  private int timeout; //second
   @Builder
-  public SagaStartedEvent(String globalTxId) {
+  public SagaStartedEvent(String globalTxId,int timeout) {
     super(globalTxId);
+    this.timeout = timeout;
   }
 }
