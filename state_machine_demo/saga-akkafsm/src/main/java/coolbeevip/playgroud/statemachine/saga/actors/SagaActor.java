@@ -182,6 +182,19 @@ public class SagaActor extends
               data.setTerminated(true);
               return stay();
             }
+        ).event(TxStartedEvent.class, SagaData.class,
+            (event, data) -> {
+              updateTxEntity(event, data);
+              return stay();
+            }
+        ).event(TxEndedEvent.class, SagaData.class,
+            (event, data) -> {
+              updateTxEntity(event, data);
+              // TODO 调用补偿方法
+              TxEntity txEntity = data.getTxEntityMap().get(event.getLocalTxId());
+              compensation(txEntity, data);
+              return stay();
+            }
         ).event(Arrays.asList(StateTimeout()), SagaData.class,
             (event, data) -> {
               return goTo(SagaActorState.SUSPENDED).replying(data);
@@ -265,6 +278,7 @@ public class SagaActor extends
           if (txEntity.getState() == TxState.ACTIVE) {
             txEntity.setEndTime(System.currentTimeMillis());
             txEntity.setState(TxState.FAILED);
+            // TODO 调用补偿方法
             data.getTxEntityMap().forEach((k, v) -> {
               if (v.getState() == TxState.COMMITTED) {
                 // TODO 调用补偿方法

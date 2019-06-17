@@ -25,7 +25,7 @@ PARTIALLY_ACTIVE --> SUSPENDED : SagaTimeoutEvent
 
 SUSPENDED --> SUSPENDED : SagaTimeoutEvent
 
-FAILED --> COMPENSATED : TxComponsitedEvent(not exist committed tx)
+FAILED --> COMPENSATED : SagaAbortedEvent
 
 FAILED --> SUSPENDED : SagaTimeoutEvent
 
@@ -36,12 +36,5 @@ COMPENSATED --> [*]
 COMMITTED --> [*]
 
 SUSPENDED --> [*]
-
-PARTIALLY_COMMITTED : update tx state
-
-PARTIALLY_ACTIVE : new tx state
-
-FAILED : while committed txs {\n    do compensate\n}
-
 
 @enduml
