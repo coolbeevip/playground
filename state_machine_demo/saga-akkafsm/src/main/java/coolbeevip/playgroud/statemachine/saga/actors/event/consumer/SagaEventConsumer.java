@@ -29,6 +29,7 @@ public class SagaEventConsumer {
 
   @Subscribe
   public void subscribeSagaEvent(BaseEvent event) throws Exception {
+    // TODO 消息log
     ActorRef saga;
     String actorPath = "/user/"+event.getGlobalTxId();
 

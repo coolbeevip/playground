@@ -25,9 +25,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class SagaApplicationTest {
 
   @Autowired
-  ActorSystem system;
-
-  @Autowired
   @Qualifier("sagaEventBus")
   EventBus sagaEventBus;
 
