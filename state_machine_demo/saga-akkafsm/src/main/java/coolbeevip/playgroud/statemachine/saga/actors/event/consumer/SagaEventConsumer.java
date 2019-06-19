@@ -9,7 +9,12 @@ import com.google.common.base.Optional;
 import com.google.common.eventbus.Subscribe;
 import coolbeevip.playgroud.statemachine.saga.actors.SagaActor;
 import coolbeevip.playgroud.statemachine.saga.actors.event.base.BaseEvent;
+import java.io.FileNotFoundException;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.omg.CORBA.TIMEOUT;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,23 +29,30 @@ public class SagaEventConsumer {
 
   public static final Timeout TIMEOUT = new Timeout(100, TimeUnit.MILLISECONDS);
 
+  FileChannel eventLogChannel;
+
   @Autowired
   ActorSystem system;
+
+  @PostConstruct
+  public void init() throws Exception {
+    eventLogChannel = new RandomAccessFile("events.dat", "rw").getChannel();
+  }
 
   @Subscribe
   public void subscribeSagaEvent(BaseEvent event) throws Exception {
     // TODO 消息log
     ActorRef saga;
-    String actorPath = "/user/"+event.getGlobalTxId();
+    String actorPath = "/user/" + event.getGlobalTxId();
 
     Optional<ActorRef> optional = this.getActorRefFromPath(actorPath);
-    if(!optional.isPresent()){
+    if (!optional.isPresent()) {
       saga = system.actorOf(SagaActor.props(event.getGlobalTxId()), event.getGlobalTxId());
-    }else{
+    } else {
       saga = optional.get();
     }
 
-    saga.tell(event,ActorRef.noSender());
+    saga.tell(event, ActorRef.noSender());
     log.info("receive {} ", event.toString());
   }
 
@@ -54,4 +66,5 @@ public class SagaEventConsumer {
       return Optional.absent();
     }
   }
+
 }

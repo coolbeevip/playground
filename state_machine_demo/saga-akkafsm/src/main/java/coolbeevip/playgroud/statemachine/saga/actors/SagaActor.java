@@ -237,6 +237,12 @@ public class SagaActor extends
           log.info("transition {} {} -> {}", getSelf(), from, to);
         })
     );
+
+  }
+
+  @Override
+  public void onRecoveryCompleted() {
+    log.info("onRecoveryCompleted: {} {}", stateName(), stateData());
   }
 
   @Override
