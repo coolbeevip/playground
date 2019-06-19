@@ -58,6 +58,8 @@ The state machine consists of a Saga state machine (global transaction) and a Tx
 
 #### Saga 状态机（Saga State Machine）
 
+
+
 ![saga_state_diagram](assets/saga_state_diagram.png)
 
 ##### Saga 状态定义（Saga State Definition）
@@ -117,52 +119,6 @@ The state machine consists of a Saga state machine (global transaction) and a Tx
 **注意：** FALIED + E<sub>tm</sub> = COMPENSATED 只有在所有状态是 Committed 的 Tx 都补偿完毕后会触发
 
 **NOTE：** FALIED + E<sub>tm</sub> = COMPENSATED Triggered only after all Tx whose state is Committed is compensated
-
-#### Tx 状态机（Tx State Machine）
-
-![image-20190510094215976](assets/tx_state_diagram.png)
-
-##### Tx 状态定义（Tx State Definition）
-
-- IDEL
-
-  空闲状态：状态实例创建后的初始化状态
-
-  Initialization state after the state instance is created
-
-- ACTIVE
-
-  激活状态：事务已经开始还未结束时的状态
-
-  Status after receiving `TxStartedEvent`
-
-* FAILED
-
-  失败状态：子事务结束状态，事务失败
-
-  Status after receiving `TxAbortedEvent`
-
-* COMMITTED
-
-  已提交状态：子事务结束状态，事务已经提交
-
-  it is final state, the sub-transaction committed
-
-* COMPENSATED
-
-  已补偿状态：子事务结束状态，事务已经补偿
-
-  it is final state, the sub-transactions compensate successfully
-
-| <font size=1>State (Current/Next)</font> | <font size=1>IDEL</font>           | <font size=1>ACTIVE</font>         | <font size=1>FAILED</font>         | <font size=1>COMMITTED</font>      | <font size=1>COMPENSATED</font>    |
-| ---------------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- | ---------------------------------- |
-| <font size=1>IDEL</font>                 | <font size=1>E<sub>ss</sub></font> | <font size=1>E<sub>ts</sub></font> |                                    |                                    |                                    |
-| <font size=1>ACTIVE</font>               |                                    |                                    | <font size=1>E<sub>te</sub></font> |                                    | <font size=1>E<sub>ta</sub></font> |
-| <font size=1>FAILED</font>               |                                    |                                    |                                    | <font size=1>E<sub>ts</sub></font> |                                    |
-| <font size=1>COMMITTED</font>            |                                    |                                    | <font size=1>E<sub>te</sub></font> |                                    | <font size=1>E<sub>ta</sub></font> |
-| <font size=1>COMPENSATED</font>          |                                    |                                    |                                    |                                    |                                    |
-
-
 
 ### 时序图（Sequence Diagram）
 
